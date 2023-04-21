@@ -6,5 +6,6 @@ Create a standard API to access core features accross any stock exchange.
 - Implement UnifiedStockExchange.Provider.CoinMarketCap-CSharp
 - Implement UnifiedStockExchange.Listener.CSharp
 - Test entire flow with price provider, UnifiedStockExchange and listener.
+- Record price changes for several trading pairs to DB.
 - Extend architecture with capability of placing stock orders.
-- Implement UnifiedStockExchange.StockExchange.Binance-CSharp
+- Implement UnifiedStockExchange.StockExchange.Binance (C# only)
