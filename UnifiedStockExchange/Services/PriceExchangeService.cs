@@ -1,5 +1,5 @@
 ﻿using UnifiedStockExchange.Contracts;
-using UnifiedStockExchange.Domain.DataTransfer;
+using UnifiedStockExchange.Domain.Utility;
 
 namespace UnifiedStockExchange.Services
 {
