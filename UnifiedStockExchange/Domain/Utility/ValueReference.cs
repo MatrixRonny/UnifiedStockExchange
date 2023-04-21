@@ -1,4 +1,4 @@
-﻿namespace UnifiedStockExchange.Domain.DataTransfer
+﻿namespace UnifiedStockExchange.Domain.Utility
 {
     public class ValueReference<T>
     {

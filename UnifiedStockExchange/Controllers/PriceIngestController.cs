@@ -75,6 +75,8 @@ namespace UnifiedStockExchange.Controllers
                             decimal amount = jsonObject.amount;
 
                             priceHandler(time, price, amount);
+                            //TODO: Save to portable DB. Each exchange|quote pair should go to another table.
+                            //TODO: Implement tool to join DB files together or create DB with new data only.
                         }
                         catch
                         {
