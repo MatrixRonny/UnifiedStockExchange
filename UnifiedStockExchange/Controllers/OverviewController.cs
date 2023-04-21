@@ -2,9 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace UnifiedStockExchange.Controllers
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class OverviewController : ControllerBase
+    public class OverviewController : ApiControllerBase
     {
         [HttpPost("[action]/{exchange}")]
         public IEnumerable<string> GetAvailableCurrencyPairs(string exchange)

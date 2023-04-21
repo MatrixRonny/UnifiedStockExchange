@@ -7,11 +7,8 @@ using UnifiedStockExchange.Services;
 
 namespace UnifiedStockExchange.Controllers
 {
-    [Route("[controller]")]
-    public class LatestPriceController : ControllerBase
+    public class LatestPriceController : WebSocketControllerBase
     {
-        // Stock Data library in Python: https://github.com/ccxt/ccxt
-        
         private readonly PriceExchangeService _priceService;
 
         public LatestPriceController(PriceExchangeService priceService)
@@ -46,26 +43,32 @@ namespace UnifiedStockExchange.Controllers
                     {
                         Monitor.Wait(lockObject);
 
-                        string json = JsonSerializer.Serialize(new { time, price, amount });
+                        long unixTimeMillis = new DateTimeOffset(time).ToUnixTimeMilliseconds();
+                        string json = JsonSerializer.Serialize(new { time = unixTimeMillis, price, amount });
                         await webSocket.SendAsync(Encoding.UTF8.GetBytes(json), WebSocketMessageType.Text, true, CancellationToken.None);
 
                         Monitor.Pulse(lockObject);
+                    }
+                    catch
+                    {
+                        await SendMessageAndClose(webSocket, "An unexpected error has occured.");
+                        return;
                     }
                     finally
                     {
                         Monitor.Exit(lockObject);
                     }
                 };
-                _priceService.RegisterListener("CoinMarketCap", "BTC-USDT", priceListener);
+                _priceService.RegisterListener(exchange, quote, priceListener);
 
-                //INFO: receiveResult.CloseStatus != null;
+                // Wait until other side closes websoket.
                 var receiveResult = await webSocket.ReceiveAsync(new byte[20], CancellationToken.None);
             }
             finally
             {
                 if (priceListener != null)
                 {
-                    _priceService.RegisterListener("CoinMarketCap", "BTC-USDT", priceListener);
+                    _priceService.RegisterListener(exchange, quote, priceListener);
                 }
             }
         }

@@ -30,7 +30,13 @@ namespace UnifiedStockExchange.Services
                             {
                                 Parallel.ForEach(forward, update =>
                                 {
-                                    update(time, price, amount);
+                                    try
+                                    {
+                                        update(time, price, amount);
+                                    }
+                                    catch
+                                    {
+                                    }
                                 });
                             }
                         };
