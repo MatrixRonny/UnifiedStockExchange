@@ -15,9 +15,9 @@ namespace UnifiedStockExchange.Services
         }
 
         DateTime _lastCleanup = DateTime.UtcNow;
-        public void RecordPrice(string exchangeName, string quote, DateTime time, decimal price, decimal amount)
+        public void RecordPrice(string exchangeName, ValueTuple<string,string> tradingPair, DateTime time, decimal price, decimal amount)
         {
-            string exchangeQuote = $"{exchangeName}|{quote}";
+            string exchangeQuote = $"{exchangeName}|{tradingPair.Item1}-{tradingPair.Item2}";
             if (!_lastWrite.ContainsKey(exchangeQuote))
             {
                 _lastWrite[exchangeQuote] = DateTime.UtcNow;

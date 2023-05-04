@@ -19,8 +19,7 @@ void AddServices(WebApplicationBuilder builder)
     builder.Services.AddSwaggerGen();
 
     string connectionString = config.GetConnectionString("DefaultConnection");
-    var dbFactory = new OrmLiteConnectionFactory(connectionString, SqliteDialect.Provider);
-    builder.Services.AddTransient(services => dbFactory.CreateDbConnection());
+    builder.Services.AddSingleton(new OrmLiteConnectionFactory(connectionString, SqliteDialect.Provider));
 
     builder.Services.AddSingleton<PricePersistenceService>();
 }
@@ -30,7 +29,10 @@ static void ConfigureServices(WebApplication app)
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
-        app.UseSwaggerUI();
+        app.UseSwaggerUI(config =>
+        {
+            config.SwaggerEndpoint("/swagger/v1/swagger.json", "UnifiedStockExchange API");
+        });
     }
 
     app.UseHttpsRedirection();

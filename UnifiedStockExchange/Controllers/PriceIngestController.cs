@@ -22,7 +22,7 @@ namespace UnifiedStockExchange.Controllers
             _priceService = priceService;
         }
 
-        [Route("{exchange}/{quote}/ws")]
+        [HttpGet("{exchange}/{quote}/ws")]
         public async Task Get(string exchange, string quote)
         {
             if (HttpContext.WebSockets.IsWebSocketRequest)
