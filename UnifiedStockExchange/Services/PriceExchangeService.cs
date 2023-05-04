@@ -8,6 +8,7 @@ namespace UnifiedStockExchange.Services
         Dictionary<string, List<string>> _priceQuotes = new Dictionary<string, List<string>>();
         Dictionary<string, PriceUpdate> _priceHandlers = new Dictionary<string, PriceUpdate>();
         Dictionary<PriceUpdate, List<PriceUpdate>> _priceListeners = new Dictionary<PriceUpdate, List<PriceUpdate>>();
+
         public PriceUpdate ListenForUpdates(string exchangeName, string quote)
         {
             lock (_priceQuotes)

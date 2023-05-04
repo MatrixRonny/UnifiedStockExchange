@@ -5,12 +5,12 @@ namespace UnifiedStockExchange.Controllers
     public class OverviewController : ApiControllerBase
     {
         [HttpPost("[action]/{exchange}")]
-        public IEnumerable<string> GetAvailableCurrencyPairs(string exchange)
+        public IEnumerable<ValueTuple<string,string>> GetAvailableCurrencyPairs(string exchange)
         {
-            return new string[]
+            return new ValueTuple<string,string>[]
             {
-                "BTC-USDT",
-                "ETH-USDT"
+                ("BTC","USDT"),
+                ("ETH","USDT")
             };
         }
 
