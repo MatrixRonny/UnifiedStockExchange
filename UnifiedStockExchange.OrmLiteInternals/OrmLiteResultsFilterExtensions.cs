@@ -14,7 +14,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
 {
     public static class OrmLiteResultsFilterExtensions
     {
-        public static ILog Log = LogManager.GetLogger(typeof(OrmLiteResultsFilterExtensions));
+        internal static ILog Log = LogManager.GetLogger(typeof(OrmLiteResultsFilterExtensions));
 
         public static int ExecNonQuery(this IDbCommand dbCmd, string sql, object anonType = null)
         {
@@ -135,7 +135,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return to;
         }
 
-        public static List<T> ExprConvertToList<T>(this IDbCommand dbCmd, string sql = null, IEnumerable<IDbDataParameter> sqlParams = null, HashSet<string> onlyFields = null)
+        internal static List<T> ExprConvertToList<T>(this IDbCommand dbCmd, string sql = null, IEnumerable<IDbDataParameter> sqlParams = null, HashSet<string> onlyFields = null)
         {
             if (sql != null)
                 dbCmd.CommandText = sql;
@@ -165,7 +165,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static object ConvertTo(this IDbCommand dbCmd, Type refType, string sql = null)
+        internal static object ConvertTo(this IDbCommand dbCmd, Type refType, string sql = null)
         {
             if (sql != null)
                 dbCmd.CommandText = sql;
@@ -179,12 +179,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static T Scalar<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
+        internal static T Scalar<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
         {
             return dbCmd.SetParameters(sqlParams).Scalar<T>(sql);
         }
 
-        public static T Scalar<T>(this IDbCommand dbCmd, string sql = null)
+        internal static T Scalar<T>(this IDbCommand dbCmd, string sql = null)
         {
             if (sql != null)
                 dbCmd.CommandText = sql;
@@ -235,7 +235,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.LongScalar();
         }
 
-        public static T ExprConvertTo<T>(this IDbCommand dbCmd, string sql = null, IEnumerable<IDbDataParameter> sqlParams = null, HashSet<string> onlyFields = null)
+        internal static T ExprConvertTo<T>(this IDbCommand dbCmd, string sql = null, IEnumerable<IDbDataParameter> sqlParams = null, HashSet<string> onlyFields = null)
         {
             if (sql != null)
                 dbCmd.CommandText = sql;
@@ -251,7 +251,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static List<T> Column<T>(this IDbCommand dbCmd, string sql = null)
+        internal static List<T> Column<T>(this IDbCommand dbCmd, string sql = null)
         {
             if (sql != null)
                 dbCmd.CommandText = sql;
@@ -265,12 +265,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static List<T> Column<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
+        internal static List<T> Column<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
         {
             return dbCmd.SetParameters(sqlParams).Column<T>(sql);
         }
 
-        public static HashSet<T> ColumnDistinct<T>(this IDbCommand dbCmd, string sql = null)
+        internal static HashSet<T> ColumnDistinct<T>(this IDbCommand dbCmd, string sql = null)
         {
             if (sql != null)
                 dbCmd.CommandText = sql;
@@ -284,7 +284,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static HashSet<T> ColumnDistinct<T>(this IDbCommand dbCmd, ISqlExpression expression)
+        internal static HashSet<T> ColumnDistinct<T>(this IDbCommand dbCmd, ISqlExpression expression)
         {
             dbCmd.PopulateWith(expression);
 
@@ -297,7 +297,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static Dictionary<K, V> Dictionary<K, V>(this IDbCommand dbCmd, string sql = null)
+        internal static Dictionary<K, V> Dictionary<K, V>(this IDbCommand dbCmd, string sql = null)
         {
             if (sql != null)
                 dbCmd.CommandText = sql;
@@ -311,7 +311,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static Dictionary<K, V> Dictionary<K, V>(this IDbCommand dbCmd, ISqlExpression expression)
+        internal static Dictionary<K, V> Dictionary<K, V>(this IDbCommand dbCmd, ISqlExpression expression)
         {
             dbCmd.PopulateWith(expression);
 
@@ -324,12 +324,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static Dictionary<K, List<V>> Lookup<K, V>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
+        internal static Dictionary<K, List<V>> Lookup<K, V>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
         {
             return dbCmd.SetParameters(sqlParams).Lookup<K, V>(sql);
         }
 
-        public static Dictionary<K, List<V>> Lookup<K, V>(this IDbCommand dbCmd, string sql = null)
+        internal static Dictionary<K, List<V>> Lookup<K, V>(this IDbCommand dbCmd, string sql = null)
         {
             if (sql != null)
                 dbCmd.CommandText = sql;

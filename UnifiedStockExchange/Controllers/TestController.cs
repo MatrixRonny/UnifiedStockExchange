@@ -6,9 +6,6 @@ using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
 using UnifiedStockExchange.Domain.Entities;
-using UnifiedStockExchange.OrmLiteInternals;
-using OrmLiteConfigExtensions = UnifiedStockExchange.OrmLiteInternals.OrmLiteConfigExtensions;
-using OrmLiteReadCommandExtensions = UnifiedStockExchange.OrmLiteInternals.OrmLiteReadCommandExtensions;
 using OrmLiteResultsFilterExtensions = UnifiedStockExchange.OrmLiteInternals.OrmLiteResultsFilterExtensions;
 using OrmLiteUtils = UnifiedStockExchange.OrmLiteInternals.OrmLiteUtils;
 using OrmLiteWriteCommandExtensions = UnifiedStockExchange.OrmLiteInternals.OrmLiteWriteCommandExtensions;
@@ -66,9 +63,7 @@ namespace UnifiedStockExchange.Controllers
 
         public void CreateTable(string tableName, bool overwrite = false)
         {
-            ModelDefinition modelDef = typeof(T).GetModelDefinition();
-            modelDef.Name = tableName;
-            _connection.Exec(dbCmd => OrmLiteWriteCommandExtensions.CreateTable(dbCmd, overwrite, modelDef));
+            _connection.Exec(dbCmd => OrmLiteWriteCommandExtensions.CreateTable<T>(dbCmd, tableName));
         }
 
         public SelectFilter<T> CreateSelectFilter()

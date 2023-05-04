@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace UnifiedStockExchange.OrmLiteInternals
+namespace UnifiedStockExchange.OrmLiteInternals.Support
 {
     internal abstract class LoadList<Into, From>
     {

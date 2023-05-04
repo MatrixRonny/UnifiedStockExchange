@@ -1,15 +1,30 @@
-﻿using ServiceStack;
+﻿//
+// ServiceStack.OrmLite: Light-weight POCO ORM for .NET and Mono
+//
+// Authors:
+//   Demis Bellot (demis.bellot@gmail.com)
+//
+// Copyright 2013 ServiceStack, Inc. All Rights Reserved.
+//
+// Licensed under the same terms of ServiceStack.
+//
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
+using ServiceStack;
 using ServiceStack.DataAnnotations;
 using ServiceStack.OrmLite;
-using System.Reflection;
 
 namespace UnifiedStockExchange.OrmLiteInternals
 {
-    public static class OrmLiteConfigExtensions
+    internal static class OrmLiteConfigExtensions
     {
         private static Dictionary<Type, ModelDefinition> typeModelDefinitionMap = new Dictionary<Type, ModelDefinition>();
 
-        public static bool CheckForIdField(IEnumerable<PropertyInfo> objProperties)
+        internal static bool CheckForIdField(IEnumerable<PropertyInfo> objProperties)
         {
             // Not using Linq.Where() and manually iterating through objProperties just to avoid dependencies on System.Xml??
             foreach (var objProperty in objProperties)
@@ -20,12 +35,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return false;
         }
 
-        public static void ClearCache()
+        internal static void ClearCache()
         {
             typeModelDefinitionMap = new Dictionary<Type, ModelDefinition>();
         }
 
-        public static ModelDefinition GetModelDefinition(this Type modelType)
+        internal static ModelDefinition GetModelDefinition(this Type modelType)
         {
             if (typeModelDefinitionMap.TryGetValue(modelType, out var modelDef))
                 return modelDef;

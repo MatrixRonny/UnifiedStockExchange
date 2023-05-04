@@ -1,18 +1,39 @@
-﻿using ServiceStack;
-using ServiceStack.Logging;
-using ServiceStack.OrmLite;
-using System.Data;
+﻿//
+// ServiceStack.OrmLite: Light-weight POCO ORM for .NET and Mono
+//
+// Authors:
+//   Demis Bellot (demis.bellot@gmail.com)
+//
+// Copyright 2013 ServiceStack, Inc. All Rights Reserved.
+//
+// Licensed under the same terms of ServiceStack.
+//
+
+using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Data;
+using System.Globalization;
+using System.Reflection;
+using System.Text;
+using ServiceStack.Logging;
+using System.Linq;
+using ServiceStack.OrmLite.Support;
 using ServiceStack.Text;
+using UnifiedStockExchange.OrmLiteInternals.Support;
+using ServiceStack;
+using ServiceStack.OrmLite;
 
 namespace UnifiedStockExchange.OrmLiteInternals
 {
+    public delegate object GetValueDelegate(int i);
+
     public static class OrmLiteReadCommandExtensions
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(OrmLiteReadCommandExtensions));
         public const string UseDbConnectionExtensions = "Use IDbConnection Extensions instead";
 
-        public static IDataReader ExecReader(this IDbCommand dbCmd, string sql)
+        internal static IDataReader ExecReader(this IDbCommand dbCmd, string sql)
         {
             dbCmd.CommandText = sql;
 
@@ -24,7 +45,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ExecuteReader();
         }
 
-        public static IDataReader ExecReader(this IDbCommand dbCmd, string sql, IEnumerable<IDataParameter> parameters)
+        internal static IDataReader ExecReader(this IDbCommand dbCmd, string sql, IEnumerable<IDataParameter> parameters)
         {
             dbCmd.CommandText = sql;
             dbCmd.Parameters.Clear();
@@ -42,12 +63,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ExecuteReader();
         }
 
-        public static List<T> Select<T>(this IDbCommand dbCmd)
+        internal static List<T> Select<T>(this IDbCommand dbCmd)
         {
             return dbCmd.Select<T>((string)null);
         }
 
-        public static void SetFilter<T>(this IDbCommand dbCmd, string name, object value)
+        internal static void SetFilter<T>(this IDbCommand dbCmd, string name, object value)
         {
             var dialectProvider = dbCmd.GetDialectProvider();
 
@@ -61,7 +82,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             dbCmd.CommandText = dbCmd.GetFilterSql<T>();
         }
 
-        public static IDbCommand SetFilters<T>(this IDbCommand dbCmd, object anonType, bool excludeDefaults)
+        internal static IDbCommand SetFilters<T>(this IDbCommand dbCmd, object anonType, bool excludeDefaults)
         {
             string ignore = null;
             dbCmd.SetParameters<T>(anonType, excludeDefaults, ref ignore); //needs to be called first
@@ -69,16 +90,16 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd;
         }
 
-        public static void PopulateWith(this IDbCommand dbCmd, ISqlExpression expression)
+        internal static void PopulateWith(this IDbCommand dbCmd, ISqlExpression expression)
         {
             dbCmd.CommandText = expression.ToSelectStatement(); //needs to evaluate SQL before setting params
             dbCmd.SetParameters(expression.Params);
         }
 
-        public static IDbCommand SetParameters<T>(this IDbCommand dbCmd, object anonType, bool excludeDefaults, ref string sql) =>
+        internal static IDbCommand SetParameters<T>(this IDbCommand dbCmd, object anonType, bool excludeDefaults, ref string sql) =>
             dbCmd.SetParameters(typeof(T), anonType, excludeDefaults, ref sql);
 
-        public static IDbCommand SetParameters(this IDbCommand dbCmd, IEnumerable<IDbDataParameter> sqlParams)
+        internal static IDbCommand SetParameters(this IDbCommand dbCmd, IEnumerable<IDbDataParameter> sqlParams)
         {
             if (sqlParams == null)
                 return dbCmd;
@@ -121,7 +142,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
              ? enumerable : null;
         }
 
-        public static IDbCommand SetParameters(this IDbCommand dbCmd, Dictionary<string, object> dict, bool excludeDefaults, ref string sql)
+        internal static IDbCommand SetParameters(this IDbCommand dbCmd, Dictionary<string, object> dict, bool excludeDefaults, ref string sql)
         {
             if (dict == null)
                 return dbCmd;
@@ -186,7 +207,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd;
         }
 
-        public static IDbCommand SetParameters(this IDbCommand dbCmd, Type type, object anonType, bool excludeDefaults, ref string sql)
+        internal static IDbCommand SetParameters(this IDbCommand dbCmd, Type type, object anonType, bool excludeDefaults, ref string sql)
         {
             if (anonType == null)
                 return dbCmd;
@@ -253,7 +274,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd;
         }
 
-        public static void SetParamValue(this IOrmLiteDialectProvider dialectProvider, IDbDataParameter p, object value, Type propType, FieldDefinition fieldDef = null)
+        internal static void SetParamValue(this IOrmLiteDialectProvider dialectProvider, IDbDataParameter p, object value, Type propType, FieldDefinition fieldDef = null)
         {
             if (fieldDef != null)
             {
@@ -277,9 +298,9 @@ namespace UnifiedStockExchange.OrmLiteInternals
                     : value;
         }
 
-        public delegate void ParamIterDelegate(string propName, string columnName, object value);
+        internal delegate void ParamIterDelegate(string propName, string columnName, object value);
 
-        public static void ForEachParam(this Dictionary<string, object> values, ModelDefinition modelDef, bool excludeDefaults, ParamIterDelegate fn)
+        internal static void ForEachParam(this Dictionary<string, object> values, ModelDefinition modelDef, bool excludeDefaults, ParamIterDelegate fn)
         {
             if (values == null)
                 return;
@@ -300,21 +321,21 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static List<string> AllFields<T>(this object anonType)
+        internal static List<string> AllFields<T>(this object anonType)
         {
             var ret = new List<string>();
             anonType.ToObjectDictionary().ForEachParam(typeof(T).GetModelDefinition(), excludeDefaults: false, fn: (propName, columnName, value) => ret.Add(propName));
             return ret;
         }
 
-        public static Dictionary<string, object> AllFieldsMap<T>(this object anonType)
+        internal static Dictionary<string, object> AllFieldsMap<T>(this object anonType)
         {
             var ret = new Dictionary<string, object>();
             anonType.ToObjectDictionary().ForEachParam(typeof(T).GetModelDefinition(), excludeDefaults: false, fn: (propName, columnName, value) => ret[propName] = value);
             return ret;
         }
 
-        public static Dictionary<string, object> NonDefaultsOnly(this Dictionary<string, object> fieldValues)
+        internal static Dictionary<string, object> NonDefaultsOnly(this Dictionary<string, object> fieldValues)
         {
             var map = new Dictionary<string, object>();
             foreach (var entry in fieldValues)
@@ -341,7 +362,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             dbCmd.Parameters.Clear();
         }
 
-        public static string GetFilterSql<T>(this IDbCommand dbCmd)
+        internal static string GetFilterSql<T>(this IDbCommand dbCmd)
         {
             var dialectProvider = dbCmd.GetDialectProvider();
             var modelDef = typeof(T).GetModelDefinition();
@@ -368,41 +389,41 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dialectProvider.ToSelectStatement(typeof(T), StringBuilderCache.ReturnAndFree(sb));
         }
 
-        //        public static bool CanReuseParam<T>(this IDbCommand dbCmd, string paramName)
+        //        internal static bool CanReuseParam<T>(this IDbCommand dbCmd, string paramName)
         //        {
         //            return (dbCmd.Parameters.Count == 1
         //                    && ((IDbDataParameter)dbCmd.Parameters[0]).ParameterName == paramName
         //                    && lastQueryType != typeof(T));
         //        }
 
-        public static List<T> SelectByIds<T>(this IDbCommand dbCmd, IEnumerable idValues)
+        internal static List<T> SelectByIds<T>(this IDbCommand dbCmd, IEnumerable idValues)
         {
             var sqlIn = dbCmd.SetIdsInSqlParams(idValues);
             return string.IsNullOrEmpty(sqlIn)
                 ? new List<T>()
-                : Select<T>(dbCmd, dbCmd.GetDialectProvider().GetQuotedColumnName(ModelDefinition<T>.PrimaryKeyName) + " IN (" + sqlIn + ")");
+                : dbCmd.Select<T>(dbCmd.GetDialectProvider().GetQuotedColumnName(ModelDefinition<T>.PrimaryKeyName) + " IN (" + sqlIn + ")");
         }
 
-        public static T SingleById<T>(this IDbCommand dbCmd, object value)
+        internal static T SingleById<T>(this IDbCommand dbCmd, object value)
         {
             dbCmd.SetFilter<T>(ModelDefinition<T>.PrimaryKeyName, value);
             return dbCmd.ConvertTo<T>();
         }
 
-        public static T SingleWhere<T>(this IDbCommand dbCmd, string name, object value)
+        internal static T SingleWhere<T>(this IDbCommand dbCmd, string name, object value)
         {
             dbCmd.SetFilter<T>(name, value);
             return dbCmd.ConvertTo<T>();
         }
 
-        public static T Single<T>(this IDbCommand dbCmd, object anonType)
+        internal static T Single<T>(this IDbCommand dbCmd, object anonType)
         {
             dbCmd.SetFilters<T>(anonType, excludeDefaults: false);
 
             return dbCmd.ConvertTo<T>();
         }
 
-        public static T Single<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
+        internal static T Single<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
         {
             dbCmd.SetParameters(sqlParams);
 
@@ -411,7 +432,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
                 : dbCmd.ConvertTo<T>(dbCmd.GetDialectProvider().ToSelectStatement(typeof(T), sql));
         }
 
-        public static T Single<T>(this IDbCommand dbCmd, string sql, object anonType)
+        internal static T Single<T>(this IDbCommand dbCmd, string sql, object anonType)
         {
             dbCmd.SetParameters<T>(anonType, excludeDefaults: false, sql: ref sql);
 
@@ -420,20 +441,20 @@ namespace UnifiedStockExchange.OrmLiteInternals
                 : dbCmd.ConvertTo<T>(dbCmd.GetDialectProvider().ToSelectStatement(typeof(T), sql));
         }
 
-        public static List<T> Where<T>(this IDbCommand dbCmd, string name, object value)
+        internal static List<T> Where<T>(this IDbCommand dbCmd, string name, object value)
         {
             dbCmd.SetFilter<T>(name, value);
             return dbCmd.ConvertToList<T>();
         }
 
-        public static List<T> Where<T>(this IDbCommand dbCmd, object anonType)
+        internal static List<T> Where<T>(this IDbCommand dbCmd, object anonType)
         {
             dbCmd.SetFilters<T>(anonType);
 
             return dbCmd.ConvertToList<T>();
         }
 
-        public static List<T> Select<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
+        internal static List<T> Select<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
         {
             dbCmd.CommandText = dbCmd.GetDialectProvider().ToSelectStatement(typeof(T), sql);
             if (sqlParams != null) dbCmd.SetParameters(sqlParams);
@@ -441,7 +462,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ConvertToList<T>();
         }
 
-        public static List<T> Select<T>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static List<T> Select<T>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             if (anonType != null) dbCmd.SetParameters<T>(anonType, excludeDefaults: false, sql: ref sql);
             dbCmd.CommandText = dbCmd.GetDialectProvider().ToSelectStatement(typeof(T), sql);
@@ -449,7 +470,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ConvertToList<T>();
         }
 
-        public static List<T> Select<T>(this IDbCommand dbCmd, string sql, Dictionary<string, object> dict)
+        internal static List<T> Select<T>(this IDbCommand dbCmd, string sql, Dictionary<string, object> dict)
         {
             if (dict != null) dbCmd.SetParameters(dict, false, sql: ref sql);
             dbCmd.CommandText = dbCmd.GetDialectProvider().ToSelectStatement(typeof(T), sql);
@@ -457,12 +478,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ConvertToList<T>();
         }
 
-        public static List<TModel> Select<TModel>(this IDbCommand dbCmd, Type fromTableType)
+        internal static List<TModel> Select<TModel>(this IDbCommand dbCmd, Type fromTableType)
         {
             return dbCmd.Select<TModel>(fromTableType, null);
         }
 
-        public static List<T> Select<T>(this IDbCommand dbCmd, Type fromTableType, string sql, object anonType = null)
+        internal static List<T> Select<T>(this IDbCommand dbCmd, Type fromTableType, string sql, object anonType = null)
         {
             if (anonType != null) dbCmd.SetParameters(fromTableType, anonType, excludeDefaults: false, sql: ref sql);
             dbCmd.CommandText = ToSelect<T>(dbCmd.GetDialectProvider(), fromTableType, sql);
@@ -470,7 +491,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ConvertToList<T>();
         }
 
-        public static string ToSelect<TModel>(IOrmLiteDialectProvider dialectProvider, Type fromTableType, string sqlFilter)
+        internal static string ToSelect<TModel>(IOrmLiteDialectProvider dialectProvider, Type fromTableType, string sqlFilter)
         {
             var sql = StringBuilderCache.Allocate();
             var modelDef = ModelDefinition<TModel>.Definition;
@@ -486,14 +507,14 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return StringBuilderCache.ReturnAndFree(sql);
         }
 
-        public static List<T> SqlList<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
+        internal static List<T> SqlList<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
         {
             dbCmd.CommandText = sql;
 
             return dbCmd.SetParameters(sqlParams).ConvertToList<T>();
         }
 
-        public static List<T> SqlList<T>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static List<T> SqlList<T>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             if (anonType != null) dbCmd.SetParameters<T>(anonType, excludeDefaults: false, sql: ref sql);
             dbCmd.CommandText = sql;
@@ -501,7 +522,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ConvertToList<T>();
         }
 
-        public static List<T> SqlList<T>(this IDbCommand dbCmd, string sql, Dictionary<string, object> dict)
+        internal static List<T> SqlList<T>(this IDbCommand dbCmd, string sql, Dictionary<string, object> dict)
         {
             if (dict != null) dbCmd.SetParameters(dict, false, sql: ref sql);
             dbCmd.CommandText = sql;
@@ -509,7 +530,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ConvertToList<T>();
         }
 
-        public static List<T> SqlList<T>(this IDbCommand dbCmd, string sql, Action<IDbCommand> dbCmdFilter)
+        internal static List<T> SqlList<T>(this IDbCommand dbCmd, string sql, Action<IDbCommand> dbCmdFilter)
         {
             dbCmdFilter?.Invoke(dbCmd);
             dbCmd.CommandText = sql;
@@ -517,19 +538,19 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ConvertToList<T>();
         }
 
-        public static List<T> SqlColumn<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
+        internal static List<T> SqlColumn<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
         {
             dbCmd.SetParameters(sqlParams).CommandText = sql;
             return dbCmd.ConvertToList<T>();
         }
 
-        public static List<T> SqlColumn<T>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static List<T> SqlColumn<T>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             dbCmd.SetParameters<T>(anonType, excludeDefaults: false, sql: ref sql).CommandText = sql;
             return dbCmd.ConvertToList<T>();
         }
 
-        public static List<T> SqlColumn<T>(this IDbCommand dbCmd, string sql, Dictionary<string, object> dict)
+        internal static List<T> SqlColumn<T>(this IDbCommand dbCmd, string sql, Dictionary<string, object> dict)
         {
             if (dict != null) dbCmd.SetParameters(dict, false, sql: ref sql);
             dbCmd.CommandText = sql;
@@ -537,45 +558,45 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ConvertToList<T>();
         }
 
-        public static T SqlScalar<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
+        internal static T SqlScalar<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
         {
             return dbCmd.SetParameters(sqlParams).Scalar<T>(sql);
         }
 
-        public static T SqlScalar<T>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static T SqlScalar<T>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             if (anonType != null) dbCmd.SetParameters<T>(anonType, excludeDefaults: false, sql: ref sql);
 
             return dbCmd.Scalar<T>(sql);
         }
 
-        public static T SqlScalar<T>(this IDbCommand dbCmd, string sql, Dictionary<string, object> dict)
+        internal static T SqlScalar<T>(this IDbCommand dbCmd, string sql, Dictionary<string, object> dict)
         {
             if (dict != null) dbCmd.SetParameters(dict, false, sql: ref sql);
 
             return dbCmd.Scalar<T>(sql);
         }
 
-        public static List<T> SelectNonDefaults<T>(this IDbCommand dbCmd, object filter)
+        internal static List<T> SelectNonDefaults<T>(this IDbCommand dbCmd, object filter)
         {
             dbCmd.SetFilters<T>(filter, excludeDefaults: true);
 
             return dbCmd.ConvertToList<T>();
         }
 
-        public static List<T> SelectNonDefaults<T>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static List<T> SelectNonDefaults<T>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             if (anonType != null) dbCmd.SetParameters<T>(anonType, excludeDefaults: true, sql: ref sql);
 
             return dbCmd.ConvertToList<T>(dbCmd.GetDialectProvider().ToSelectStatement(typeof(T), sql));
         }
 
-        public static IEnumerable<T> SelectLazy<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
+        internal static IEnumerable<T> SelectLazy<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
         {
             foreach (var p in dbCmd.SetParameters(sqlParams).SelectLazy<T>(sql)) yield return p;
         }
 
-        public static IEnumerable<T> SelectLazy<T>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static IEnumerable<T> SelectLazy<T>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             if (anonType != null) dbCmd.SetParameters<T>(anonType, excludeDefaults: false, sql: ref sql);
             var dialectProvider = dbCmd.GetDialectProvider();
@@ -604,12 +625,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static IEnumerable<T> ColumnLazy<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
+        internal static IEnumerable<T> ColumnLazy<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
         {
             foreach (var p in dbCmd.SetParameters(sqlParams).ColumnLazy<T>(sql)) yield return p;
         }
 
-        public static IEnumerable<T> ColumnLazy<T>(this IDbCommand dbCmd, string sql, object anonType)
+        internal static IEnumerable<T> ColumnLazy<T>(this IDbCommand dbCmd, string sql, object anonType)
         {
             foreach (var p in dbCmd.SetParameters<T>(anonType, excludeDefaults: false, sql: ref sql).ColumnLazy<T>(sql)) yield return p;
         }
@@ -641,7 +662,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static IEnumerable<T> WhereLazy<T>(this IDbCommand dbCmd, object anonType)
+        internal static IEnumerable<T> WhereLazy<T>(this IDbCommand dbCmd, object anonType)
         {
             dbCmd.SetFilters<T>(anonType);
 
@@ -668,19 +689,19 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static IEnumerable<T> SelectLazy<T>(this IDbCommand dbCmd)
+        internal static IEnumerable<T> SelectLazy<T>(this IDbCommand dbCmd)
         {
             return dbCmd.SelectLazy<T>(null);
         }
 
-        public static T Scalar<T>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static T Scalar<T>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             if (anonType != null) dbCmd.SetParameters<T>(anonType, excludeDefaults: false, sql: ref sql);
 
             return dbCmd.Scalar<T>(sql);
         }
 
-        public static T Scalar<T>(this IDataReader reader, IOrmLiteDialectProvider dialectProvider)
+        internal static T Scalar<T>(this IDataReader reader, IOrmLiteDialectProvider dialectProvider)
         {
             while (reader.Read())
             {
@@ -690,7 +711,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return default;
         }
 
-        public static T ToScalar<T>(IOrmLiteDialectProvider dialectProvider, IDataReader reader, int columnIndex = 0)
+        internal static T ToScalar<T>(IOrmLiteDialectProvider dialectProvider, IDataReader reader, int columnIndex = 0)
         {
             var nullableType = Nullable.GetUnderlyingType(typeof(T));
             if (nullableType != null)
@@ -718,7 +739,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return (T)reader.GetValue(0);
         }
 
-        public static long LastInsertId(this IDbCommand dbCmd)
+        internal static long LastInsertId(this IDbCommand dbCmd)
         {
             if (OrmLiteConfig.ResultsFilter != null)
                 return OrmLiteConfig.ResultsFilter.GetLastInsertId(dbCmd);
@@ -726,14 +747,14 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.GetDialectProvider().GetLastInsertId(dbCmd);
         }
 
-        public static List<T> Column<T>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static List<T> Column<T>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             if (anonType != null) dbCmd.SetParameters<T>(anonType, excludeDefaults: false, sql: ref sql);
 
             return dbCmd.Column<T>(dbCmd.GetDialectProvider().ToSelectStatement(typeof(T), sql));
         }
 
-        public static List<T> Column<T>(this IDataReader reader, IOrmLiteDialectProvider dialectProvider)
+        internal static List<T> Column<T>(this IDataReader reader, IOrmLiteDialectProvider dialectProvider)
         {
             var columValues = new List<T>();
 
@@ -748,17 +769,17 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return columValues;
         }
 
-        public static HashSet<T> ColumnDistinct<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
+        internal static HashSet<T> ColumnDistinct<T>(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams)
         {
             return dbCmd.SetParameters(sqlParams).ColumnDistinct<T>(sql);
         }
 
-        public static HashSet<T> ColumnDistinct<T>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static HashSet<T> ColumnDistinct<T>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             return dbCmd.SetParameters<T>(anonType, excludeDefaults: false, sql: ref sql).ColumnDistinct<T>(sql);
         }
 
-        public static HashSet<T> ColumnDistinct<T>(this IDataReader reader, IOrmLiteDialectProvider dialectProvider)
+        internal static HashSet<T> ColumnDistinct<T>(this IDataReader reader, IOrmLiteDialectProvider dialectProvider)
         {
             var columValues = new HashSet<T>();
             while (reader.Read())
@@ -772,12 +793,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return columValues;
         }
 
-        public static Dictionary<K, List<V>> Lookup<K, V>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static Dictionary<K, List<V>> Lookup<K, V>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             return dbCmd.SetParameters(anonType.ToObjectDictionary(), false, sql: ref sql).Lookup<K, V>(sql);
         }
 
-        public static Dictionary<K, List<V>> Lookup<K, V>(this IDataReader reader, IOrmLiteDialectProvider dialectProvider)
+        internal static Dictionary<K, List<V>> Lookup<K, V>(this IDataReader reader, IOrmLiteDialectProvider dialectProvider)
         {
             var lookup = new Dictionary<K, List<V>>();
 
@@ -797,14 +818,14 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return lookup;
         }
 
-        public static Dictionary<K, V> Dictionary<K, V>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static Dictionary<K, V> Dictionary<K, V>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             if (anonType != null) dbCmd.SetParameters(anonType.ToObjectDictionary(), excludeDefaults: false, sql: ref sql);
 
             return dbCmd.Dictionary<K, V>(sql);
         }
 
-        public static Dictionary<K, V> Dictionary<K, V>(this IDataReader reader, IOrmLiteDialectProvider dialectProvider)
+        internal static Dictionary<K, V> Dictionary<K, V>(this IDataReader reader, IOrmLiteDialectProvider dialectProvider)
         {
             var map = new Dictionary<K, V>();
 
@@ -819,7 +840,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return map;
         }
 
-        public static bool Exists<T>(this IDbCommand dbCmd, object anonType)
+        internal static bool Exists<T>(this IDbCommand dbCmd, object anonType)
         {
             string sql = null;
             if (anonType != null) dbCmd.SetParameters(anonType.ToObjectDictionary(), excludeDefaults: true, sql: ref sql);
@@ -830,7 +851,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return result != null;
         }
 
-        public static bool Exists<T>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static bool Exists<T>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             if (anonType != null) dbCmd.SetParameters(anonType.ToObjectDictionary(), false, sql: ref sql);
 
@@ -839,12 +860,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
         }
 
         // procedures ...		
-        public static List<TOutputModel> SqlProcedure<TOutputModel>(this IDbCommand dbCommand, object fromObjWithProperties)
+        internal static List<TOutputModel> SqlProcedure<TOutputModel>(this IDbCommand dbCommand, object fromObjWithProperties)
         {
             return dbCommand.SqlProcedureFmt<TOutputModel>(fromObjWithProperties, string.Empty);
         }
 
-        public static List<TOutputModel> SqlProcedureFmt<TOutputModel>(this IDbCommand dbCmd,
+        internal static List<TOutputModel> SqlProcedureFmt<TOutputModel>(this IDbCommand dbCmd,
             object fromObjWithProperties,
             string sqlFilter,
             params object[] filterParams)
@@ -863,9 +884,9 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return ToLong(result);
         }
 
-        public static long ToLong(int result) => result;
+        internal static long ToLong(int result) => result;
 
-        public static long ToLong(object result)
+        internal static long ToLong(object result)
         {
             if (result is DBNull) return default;
             if (result is int) return (int)result;
@@ -874,7 +895,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return (long)result;
         }
 
-        public static T LoadSingleById<T>(this IDbCommand dbCmd, object value, string[] include = null)
+        internal static T LoadSingleById<T>(this IDbCommand dbCmd, object value, string[] include = null)
         {
             var row = dbCmd.SingleById<T>(value);
             if (row == null)
@@ -912,7 +933,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static List<Into> LoadListWithReferences<Into, From>(this IDbCommand dbCmd, SqlExpression<From> expr = null, IEnumerable<string> include = null)
+        internal static List<Into> LoadListWithReferences<Into, From>(this IDbCommand dbCmd, SqlExpression<From> expr = null, IEnumerable<string> include = null)
         {
             var loadList = new LoadListSync<Into, From>(dbCmd, expr);
             var fieldDefs = loadList.FieldDefs;
@@ -1026,7 +1047,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return p;
         }
 
-        public static IDbCommand SqlProc(this IDbCommand dbCmd, string name, object inParams = null, bool excludeDefaults = false)
+        internal static IDbCommand SqlProc(this IDbCommand dbCmd, string name, object inParams = null, bool excludeDefaults = false)
         {
             dbCmd.CommandType = CommandType.StoredProcedure;
             dbCmd.CommandText = name;

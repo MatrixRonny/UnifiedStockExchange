@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace UnifiedStockExchange.OrmLiteInternals
+namespace UnifiedStockExchange.OrmLiteInternals.Support
 {
     internal abstract class LoadReferences<T>
     {

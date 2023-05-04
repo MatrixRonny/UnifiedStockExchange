@@ -1,15 +1,35 @@
-﻿using ServiceStack;
-using ServiceStack.Logging;
-using ServiceStack.OrmLite;
-using ServiceStack.Text;
+﻿//
+// ServiceStack.OrmLite: Light-weight POCO ORM for .NET and Mono
+//
+// Authors:
+//   Demis Bellot (demis.bellot@gmail.com)
+//
+// Copyright 2013 ServiceStack, Inc. All Rights Reserved.
+//
+// Licensed under the same terms of ServiceStack.
+//
+
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Data;
 using System.Dynamic;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
+using ServiceStack.Logging;
+using ServiceStack.Text;
+using ServiceStack.OrmLite.Dapper;
+using ServiceStack.Reflection;
+using ServiceStack;
+using ServiceStack.OrmLite;
 
 namespace UnifiedStockExchange.OrmLiteInternals
 {
+    internal class EOT { }
+
     public static class OrmLiteUtils
     {
         internal const string AsyncRequiresNet45Error = "Async support is only available in .NET 4.5 builds";
@@ -30,7 +50,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
 
         public static void DebugCommand(this ILog log, IDbCommand cmd)
         {
-            log.Debug(GetDebugString(cmd));
+            log.Debug(cmd.GetDebugString());
         }
 
         public static string GetDebugString(this IDbCommand cmd)
@@ -61,9 +81,9 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return (T)ReflectionExtensions.CreateInstance<T>();
         }
 
-        public static bool IsTuple(this Type type) => type.Name.StartsWith("Tuple`", StringComparison.Ordinal);
+        internal static bool IsTuple(this Type type) => type.Name.StartsWith("Tuple`", StringComparison.Ordinal);
 
-        public static bool IsValueTuple(this Type type) => type.Name.StartsWith("ValueTuple`", StringComparison.Ordinal);
+        internal static bool IsValueTuple(this Type type) => type.Name.StartsWith("ValueTuple`", StringComparison.Ordinal);
 
         public static bool IsScalar<T>()
         {
@@ -93,7 +113,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
                     row.PopulateWithSqlReader(dialectProvider, reader, indexCache, values);
                     return row;
                 }
-                return default(T);
+                return default;
             }
         }
 
@@ -257,7 +277,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static List<object> ToMultiTuple(this IDataReader reader,
+        internal static List<object> ToMultiTuple(this IDataReader reader,
             IOrmLiteDialectProvider dialectProvider,
             List<Tuple<FieldDefinition, int, IOrmLiteConverter>[]> modelIndexCaches,
             Type[] genericArgs,
@@ -274,7 +294,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return tupleArgs;
         }
 
-        public static List<Tuple<FieldDefinition, int, IOrmLiteConverter>[]> GetMultiIndexCaches(
+        internal static List<Tuple<FieldDefinition, int, IOrmLiteConverter>[]> GetMultiIndexCaches(
             this IDataReader reader,
             IOrmLiteDialectProvider dialectProvider,
             HashSet<string> onlyFields,
@@ -339,9 +359,9 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return to;
         }
 
-        public static string GetColumnNames(this Type tableType, IOrmLiteDialectProvider dialect)
+        internal static string GetColumnNames(this Type tableType, IOrmLiteDialectProvider dialect)
         {
-            return GetColumnNames(tableType.GetModelDefinition(), dialect);
+            return tableType.GetModelDefinition().GetColumnNames(dialect);
         }
 
         public static string GetColumnNames(this ModelDefinition modelDef, IOrmLiteDialectProvider dialect)
@@ -363,7 +383,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return StringBuilderCache.ReturnAndFree(sb);
         }
 
-        public static string SetIdsInSqlParams(this IDbCommand dbCmd, IEnumerable idValues)
+        internal static string SetIdsInSqlParams(this IDbCommand dbCmd, IEnumerable idValues)
         {
             var inArgs = Sql.Flatten(idValues);
             var sbParams = StringBuilderCache.Allocate();
@@ -380,7 +400,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
 
         public static string SqlFmt(this string sqlText, params object[] sqlParams)
         {
-            return SqlFmt(sqlText, OrmLiteConfig.DialectProvider, sqlParams);
+            return sqlText.SqlFmt(OrmLiteConfig.DialectProvider, sqlParams);
         }
 
         public static string SqlFmt(this string sqlText, IOrmLiteDialectProvider dialect, params object[] sqlParams)
@@ -539,7 +559,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
 
         public static string SqlJoin(IEnumerable values, IOrmLiteDialectProvider dialect = null)
         {
-            dialect = (dialect ?? OrmLiteConfig.DialectProvider);
+            dialect = dialect ?? OrmLiteConfig.DialectProvider;
 
             var sb = StringBuilderCache.Allocate();
             foreach (var value in values)
@@ -581,7 +601,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             int? endPos = null)
         {
             var end = endPos.GetValueOrDefault(reader.FieldCount);
-            var cacheKey = (startPos == 0 && end == reader.FieldCount && onlyFields == null)
+            var cacheKey = startPos == 0 && end == reader.FieldCount && onlyFields == null
                             ? new IndexFieldsCacheKey(reader, modelDefinition, dialect)
                             : null;
 
@@ -669,7 +689,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
         }
 
         private const int NotFound = -1;
-        public static int FindColumnIndex(IOrmLiteDialectProvider dialectProvider, FieldDefinition fieldDef, Dictionary<string, int> dbFieldMap)
+        internal static int FindColumnIndex(IOrmLiteDialectProvider dialectProvider, FieldDefinition fieldDef, Dictionary<string, int> dbFieldMap)
         {
             var fieldName = dialectProvider.NamingStrategy.GetColumnName(fieldDef.FieldName);
             if (dbFieldMap.TryGetValue(fieldName, out var index))
@@ -836,7 +856,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
 
             foreach (var fieldDef in modelDef.AllFieldDefinitionsArray)
             {
-                if ((fieldDef.FieldType != typeof(Child) && fieldDef.FieldType != typeof(List<Child>)) || !fieldDef.IsReference)
+                if (fieldDef.FieldType != typeof(Child) && fieldDef.FieldType != typeof(List<Child>) || !fieldDef.IsReference)
                     continue;
 
                 hasChildRef = true;
@@ -878,7 +898,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return parents;
         }
 
-        public static void SetListChildResults<Parent>(List<Parent> parents, ModelDefinition modelDef,
+        internal static void SetListChildResults<Parent>(List<Parent> parents, ModelDefinition modelDef,
             FieldDefinition fieldDef, Type refType, IList childResults, FieldDefinition refField)
         {
             var map = new Dictionary<object, List<object>>();
@@ -906,7 +926,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static void SetRefSelfChildResults<Parent>(List<Parent> parents, FieldDefinition fieldDef, ModelDefinition refModelDef, FieldDefinition refSelf, IList childResults)
+        internal static void SetRefSelfChildResults<Parent>(List<Parent> parents, FieldDefinition fieldDef, ModelDefinition refModelDef, FieldDefinition refSelf, IList childResults)
         {
             var map = new Dictionary<object, object>();
             foreach (var result in childResults)
@@ -925,7 +945,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static void SetRefFieldChildResults<Parent>(List<Parent> parents, ModelDefinition modelDef,
+        internal static void SetRefFieldChildResults<Parent>(List<Parent> parents, ModelDefinition modelDef,
             FieldDefinition fieldDef, FieldDefinition refField, IList childResults)
         {
             var map = new Dictionary<object, object>();
