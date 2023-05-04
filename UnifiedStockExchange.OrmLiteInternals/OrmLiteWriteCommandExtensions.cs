@@ -1,10 +1,24 @@
-﻿using ServiceStack;
+﻿//
+// ServiceStack.OrmLite: Light-weight POCO ORM for .NET and Mono
+//
+// Authors:
+//   Demis Bellot (demis.bellot@gmail.com)
+//
+// Copyright 2013 ServiceStack, Inc. All Rights Reserved.
+//
+// Licensed under the same terms of ServiceStack.
+//
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using ServiceStack;
 using ServiceStack.Data;
 using ServiceStack.Logging;
 using ServiceStack.OrmLite;
 using ServiceStack.OrmLite.Converters;
-using System.Data;
-using System.Collections;
 using ServiceStack.Text;
 
 namespace UnifiedStockExchange.OrmLiteInternals
@@ -13,13 +27,36 @@ namespace UnifiedStockExchange.OrmLiteInternals
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(OrmLiteWriteCommandExtensions));
 
-        public static bool CreateTable(this IDbCommand dbCmd, bool overwrite, Type modelType)
+        internal static void CreateTables(this IDbCommand dbCmd, bool overwrite, params Type[] tableTypes)
         {
-            var modelDef = modelType.GetModelDefinition();
+            foreach (var tableType in tableTypes)
+            {
+                dbCmd.CreateTable(overwrite, tableType);
+            }
+        }
+
+        public static bool CreateTable<T>(this IDbCommand dbCmd, bool overwrite = false)
+        {
+            var tableType = typeof(T);
+            ModelDefinition modelDef = tableType.GetModelDefinition();
             return dbCmd.CreateTable(overwrite, modelDef);
         }
 
-        public static bool CreateTable(this IDbCommand dbCmd, bool overwrite, ModelDefinition modelDef)
+        public static bool CreateTable<T>(this IDbCommand dbCmd, string tableName, bool overwrite = false)
+        {
+            var tableType = typeof(T);
+            ModelDefinition modelDef = tableType.GetModelDefinition();
+            modelDef.Name = tableName;
+            return dbCmd.CreateTable(overwrite, modelDef);
+        }
+
+        public static bool CreateTable(this IDbCommand dbCmd, bool overwrite, Type tableType)
+        {
+            ModelDefinition modelDef = tableType.GetModelDefinition();
+            return dbCmd.CreateTable(overwrite, modelDef);
+        }
+
+        private static bool CreateTable(this IDbCommand dbCmd, bool overwrite, ModelDefinition modelDef)
         {
             var dialectProvider = dbCmd.GetDialectProvider();
             var tableName = dialectProvider.NamingStrategy.GetTableName(modelDef);
@@ -136,17 +173,17 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return false;
         }
 
-        public static void DropTable<T>(this IDbCommand dbCmd)
+        internal static void DropTable<T>(this IDbCommand dbCmd)
         {
             DropTable(dbCmd, ModelDefinition<T>.Definition);
         }
 
-        public static void DropTable(this IDbCommand dbCmd, Type modelType)
+        internal static void DropTable(this IDbCommand dbCmd, Type modelType)
         {
             DropTable(dbCmd, modelType.GetModelDefinition());
         }
 
-        public static void DropTables(this IDbCommand dbCmd, params Type[] tableTypes)
+        internal static void DropTables(this IDbCommand dbCmd, params Type[] tableTypes)
         {
             foreach (var modelDef in tableTypes.Select(type => type.GetModelDefinition()))
             {
@@ -189,12 +226,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static string LastSql(this IDbCommand dbCmd)
+        internal static string LastSql(this IDbCommand dbCmd)
         {
             return dbCmd.CommandText;
         }
 
-        public static int ExecuteSql(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams = null)
+        internal static int ExecuteSql(this IDbCommand dbCmd, string sql, IEnumerable<IDbDataParameter> sqlParams = null)
         {
             dbCmd.CommandText = sql;
 
@@ -211,7 +248,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ExecuteNonQuery();
         }
 
-        public static int ExecuteSql(this IDbCommand dbCmd, string sql, object anonType)
+        internal static int ExecuteSql(this IDbCommand dbCmd, string sql, object anonType)
         {
             if (anonType != null)
                 dbCmd.SetParameters(anonType.ToObjectDictionary(), excludeDefaults: false, sql: ref sql);
@@ -322,7 +359,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return objWithProperties;
         }
 
-        public static object[] PopulateValues(this IDataReader reader, object[] values, IOrmLiteDialectProvider dialectProvider)
+        internal static object[] PopulateValues(this IDataReader reader, object[] values, IOrmLiteDialectProvider dialectProvider)
         {
             if (!OrmLiteConfig.DeoptimizeReader)
             {
@@ -348,7 +385,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return values;
         }
 
-        public static int Update<T>(this IDbCommand dbCmd, T obj, Action<IDbCommand> commandFilter = null)
+        internal static int Update<T>(this IDbCommand dbCmd, T obj, Action<IDbCommand> commandFilter = null)
         {
             OrmLiteConfig.UpdateFilter?.Invoke(dbCmd, obj);
 
@@ -368,12 +405,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return rowsUpdated;
         }
 
-        public static int Update<T>(this IDbCommand dbCmd, T[] objs, Action<IDbCommand> commandFilter = null)
+        internal static int Update<T>(this IDbCommand dbCmd, T[] objs, Action<IDbCommand> commandFilter = null)
         {
             return dbCmd.UpdateAll(objs: objs, commandFilter: commandFilter);
         }
 
-        public static int UpdateAll<T>(this IDbCommand dbCmd, IEnumerable<T> objs, Action<IDbCommand> commandFilter = null)
+        internal static int UpdateAll<T>(this IDbCommand dbCmd, IEnumerable<T> objs, Action<IDbCommand> commandFilter = null)
         {
             IDbTransaction dbTrans = null;
 
@@ -423,12 +460,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return rowsUpdated;
         }
 
-        public static int Delete<T>(this IDbCommand dbCmd, T anonType)
+        internal static int Delete<T>(this IDbCommand dbCmd, T anonType)
         {
             return dbCmd.Delete<T>((object)anonType);
         }
 
-        public static int Delete<T>(this IDbCommand dbCmd, object anonType)
+        internal static int Delete<T>(this IDbCommand dbCmd, object anonType)
         {
             var dialectProvider = dbCmd.GetDialectProvider();
 
@@ -440,7 +477,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return AssertRowsUpdated(dbCmd, hadRowVersion);
         }
 
-        public static int DeleteNonDefaults<T>(this IDbCommand dbCmd, T filter)
+        internal static int DeleteNonDefaults<T>(this IDbCommand dbCmd, T filter)
         {
             var dialectProvider = dbCmd.GetDialectProvider();
             var hadRowVersion = dialectProvider.PrepareParameterizedDeleteStatement<T>(
@@ -451,7 +488,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return AssertRowsUpdated(dbCmd, hadRowVersion);
         }
 
-        public static int Delete<T>(this IDbCommand dbCmd, T[] objs)
+        internal static int Delete<T>(this IDbCommand dbCmd, T[] objs)
         {
             if (objs.Length == 0)
                 return 0;
@@ -459,7 +496,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.DeleteAll(objs);
         }
 
-        public static int DeleteNonDefaults<T>(this IDbCommand dbCmd, T[] filters)
+        internal static int DeleteNonDefaults<T>(this IDbCommand dbCmd, T[] filters)
         {
             if (filters.Length == 0) return 0;
 
@@ -501,14 +538,14 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return count;
         }
 
-        public static int DeleteById<T>(this IDbCommand dbCmd, object id)
+        internal static int DeleteById<T>(this IDbCommand dbCmd, object id)
         {
             var sql = dbCmd.DeleteByIdSql<T>(id);
 
             return dbCmd.ExecuteSql(sql);
         }
 
-        public static string DeleteByIdSql<T>(this IDbCommand dbCmd, object id)
+        internal static string DeleteByIdSql<T>(this IDbCommand dbCmd, object id)
         {
             var modelDef = ModelDefinition<T>.Definition;
             var dialectProvider = dbCmd.GetDialectProvider();
@@ -524,7 +561,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return sql;
         }
 
-        public static void DeleteById<T>(this IDbCommand dbCmd, object id, ulong rowVersion)
+        internal static void DeleteById<T>(this IDbCommand dbCmd, object id, ulong rowVersion)
         {
             var sql = dbCmd.DeleteByIdSql<T>(id, rowVersion);
 
@@ -533,7 +570,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
                 throw new OptimisticConcurrencyException("The row was modified or deleted since the last read");
         }
 
-        public static string DeleteByIdSql<T>(this IDbCommand dbCmd, object id, ulong rowVersion)
+        internal static string DeleteByIdSql<T>(this IDbCommand dbCmd, object id, ulong rowVersion)
         {
             var modelDef = ModelDefinition<T>.Definition;
             var dialectProvider = dbCmd.GetDialectProvider();
@@ -565,7 +602,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return sql;
         }
 
-        public static int DeleteByIds<T>(this IDbCommand dbCmd, IEnumerable idValues)
+        internal static int DeleteByIds<T>(this IDbCommand dbCmd, IEnumerable idValues)
         {
             var sqlIn = dbCmd.SetIdsInSqlParams(idValues);
             if (string.IsNullOrEmpty(sqlIn))
@@ -576,7 +613,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ExecuteSql(sql);
         }
 
-        public static string GetDeleteByIdsSql<T>(string sqlIn, IOrmLiteDialectProvider dialectProvider)
+        internal static string GetDeleteByIdsSql<T>(string sqlIn, IOrmLiteDialectProvider dialectProvider)
         {
             var modelDef = ModelDefinition<T>.Definition;
 
@@ -585,35 +622,35 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return sql;
         }
 
-        public static int DeleteAll<T>(this IDbCommand dbCmd)
+        internal static int DeleteAll<T>(this IDbCommand dbCmd)
         {
             return dbCmd.DeleteAll(typeof(T));
         }
 
-        public static int DeleteAll<T>(this IDbCommand dbCmd, IEnumerable<T> rows)
+        internal static int DeleteAll<T>(this IDbCommand dbCmd, IEnumerable<T> rows)
         {
             var ids = rows.Map(x => x.GetId());
             return dbCmd.DeleteByIds<T>(ids);
         }
 
-        public static int DeleteAll(this IDbCommand dbCmd, Type tableType)
+        internal static int DeleteAll(this IDbCommand dbCmd, Type tableType)
         {
             return dbCmd.ExecuteSql(dbCmd.GetDialectProvider().ToDeleteStatement(tableType, null));
         }
 
-        public static int Delete<T>(this IDbCommand dbCmd, string sql, object anonType = null)
+        internal static int Delete<T>(this IDbCommand dbCmd, string sql, object anonType = null)
         {
             if (anonType != null) dbCmd.SetParameters<T>(anonType, excludeDefaults: false, sql: ref sql);
             return dbCmd.ExecuteSql(dbCmd.GetDialectProvider().ToDeleteStatement(typeof(T), sql));
         }
 
-        public static int Delete(this IDbCommand dbCmd, Type tableType, string sql, object anonType = null)
+        internal static int Delete(this IDbCommand dbCmd, Type tableType, string sql, object anonType = null)
         {
             if (anonType != null) dbCmd.SetParameters(tableType, anonType, excludeDefaults: false, sql: ref sql);
             return dbCmd.ExecuteSql(dbCmd.GetDialectProvider().ToDeleteStatement(tableType, sql));
         }
 
-        public static long Insert<T>(this IDbCommand dbCmd, T obj, Action<IDbCommand> commandFilter, bool selectIdentity = false)
+        internal static long Insert<T>(this IDbCommand dbCmd, T obj, Action<IDbCommand> commandFilter, bool selectIdentity = false)
         {
             OrmLiteConfig.InsertFilter?.Invoke(dbCmd, obj);
 
@@ -644,7 +681,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd.ExecNonQuery();
         }
 
-        public static long PopulateReturnValues<T>(this IDataReader reader, IOrmLiteDialectProvider dialectProvider, T obj)
+        internal static long PopulateReturnValues<T>(this IDataReader reader, IOrmLiteDialectProvider dialectProvider, T obj)
         {
             if (reader.Read())
             {
@@ -662,15 +699,15 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return 0;
         }
 
-        public static void Insert<T>(this IDbCommand dbCmd, Action<IDbCommand> commandFilter, params T[] objs)
+        internal static void Insert<T>(this IDbCommand dbCmd, Action<IDbCommand> commandFilter, params T[] objs)
         {
             dbCmd.InsertAll(objs: objs, commandFilter: commandFilter);
         }
 
-        public static long InsertIntoSelect<T>(this IDbCommand dbCmd, ISqlExpression query, Action<IDbCommand> commandFilter) =>
+        internal static long InsertIntoSelect<T>(this IDbCommand dbCmd, ISqlExpression query, Action<IDbCommand> commandFilter) =>
             dbCmd.InsertIntoSelectInternal<T>(query, commandFilter).ExecNonQuery();
 
-        public static IDbCommand InsertIntoSelectInternal<T>(this IDbCommand dbCmd, ISqlExpression query, Action<IDbCommand> commandFilter)
+        internal static IDbCommand InsertIntoSelectInternal<T>(this IDbCommand dbCmd, ISqlExpression query, Action<IDbCommand> commandFilter)
         {
             var dialectProvider = dbCmd.GetDialectProvider();
 
@@ -693,7 +730,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return dbCmd;
         }
 
-        public static void InsertAll<T>(this IDbCommand dbCmd, IEnumerable<T> objs, Action<IDbCommand> commandFilter)
+        internal static void InsertAll<T>(this IDbCommand dbCmd, IEnumerable<T> objs, Action<IDbCommand> commandFilter)
         {
             IDbTransaction dbTrans = null;
 
@@ -732,7 +769,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static void InsertUsingDefaults<T>(this IDbCommand dbCmd, params T[] objs)
+        internal static void InsertUsingDefaults<T>(this IDbCommand dbCmd, params T[] objs)
         {
             IDbTransaction dbTrans = null;
 
@@ -776,12 +813,12 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static int Save<T>(this IDbCommand dbCmd, params T[] objs)
+        internal static int Save<T>(this IDbCommand dbCmd, params T[] objs)
         {
             return dbCmd.SaveAll(objs);
         }
 
-        public static bool Save<T>(this IDbCommand dbCmd, T obj)
+        internal static bool Save<T>(this IDbCommand dbCmd, T obj)
         {
             var modelDef = typeof(T).GetModelDefinition();
             var id = modelDef.GetPrimaryKey(obj);
@@ -814,7 +851,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return false;
         }
 
-        public static int SaveAll<T>(this IDbCommand dbCmd, IEnumerable<T> objs)
+        internal static int SaveAll<T>(this IDbCommand dbCmd, IEnumerable<T> objs)
         {
             var saveRows = objs.ToList();
 
@@ -883,7 +920,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return rowsAdded;
         }
 
-        public static void SaveAllReferences<T>(this IDbCommand dbCmd, T instance)
+        internal static void SaveAllReferences<T>(this IDbCommand dbCmd, T instance)
         {
             var modelDef = ModelDefinition<T>.Definition;
             var pkValue = modelDef.PrimaryKey.GetValue(instance);
@@ -948,7 +985,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             }
         }
 
-        public static void SaveReferences<T, TRef>(this IDbCommand dbCmd, T instance, params TRef[] refs)
+        internal static void SaveReferences<T, TRef>(this IDbCommand dbCmd, T instance, params TRef[] refs)
         {
             var modelDef = ModelDefinition<T>.Definition;
             var pkValue = modelDef.PrimaryKey.GetValue(instance);
@@ -982,14 +1019,14 @@ namespace UnifiedStockExchange.OrmLiteInternals
         }
 
         // Procedures
-        public static void ExecuteProcedure<T>(this IDbCommand dbCmd, T obj)
+        internal static void ExecuteProcedure<T>(this IDbCommand dbCmd, T obj)
         {
             var dialectProvider = dbCmd.GetDialectProvider();
             dialectProvider.PrepareStoredProcedureStatement(dbCmd, obj);
             dbCmd.ExecuteNonQuery();
         }
 
-        public static object GetRowVersion(this IDbCommand dbCmd, ModelDefinition modelDef, object id, Type asType)
+        internal static object GetRowVersion(this IDbCommand dbCmd, ModelDefinition modelDef, object id, Type asType)
         {
             var sql = dbCmd.RowVersionSql(modelDef, id);
             var to = dbCmd.GetDialectProvider().FromDbRowVersion(modelDef.RowVersion.FieldType, dbCmd.Scalar<object>(sql));
@@ -1000,7 +1037,7 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return to;
         }
 
-        public static string RowVersionSql(this IDbCommand dbCmd, ModelDefinition modelDef, object id)
+        internal static string RowVersionSql(this IDbCommand dbCmd, ModelDefinition modelDef, object id)
         {
             var dialectProvider = dbCmd.GetDialectProvider();
             var idParamString = dialectProvider.GetParam();
