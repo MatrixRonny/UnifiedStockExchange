@@ -173,9 +173,16 @@ namespace UnifiedStockExchange.OrmLiteInternals
             return false;
         }
 
-        internal static void DropTable<T>(this IDbCommand dbCmd)
+        public static void DropTable<T>(this IDbCommand dbCmd)
         {
             DropTable(dbCmd, ModelDefinition<T>.Definition);
+        }
+
+        public static void DropTable<T>(this IDbCommand dbCmd, string tableName)
+        {
+            ModelDefinition modelDef = ModelDefinition<T>.Definition;
+            modelDef.Name = tableName;
+            DropTable(dbCmd, modelDef);
         }
 
         internal static void DropTable(this IDbCommand dbCmd, Type modelType)

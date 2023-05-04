@@ -5,13 +5,12 @@ namespace UnifiedStockExchange.Services
 {
     public class PricePersistenceService
     {
-        private readonly IDbConnection _dbConnection;
-
+        private readonly OrmLiteConnectionFactory _connectionFactory;
         Dictionary<string, DateTime> _lastWrite = new();
         Dictionary<string, object> _tableAccess = new();
-        public PricePersistenceService(IDbConnection dbConnection)
+        public PricePersistenceService(OrmLiteConnectionFactory connectionFactory)
         {
-            _dbConnection = dbConnection;
+            _connectionFactory = connectionFactory;
         }
 
         DateTime _lastCleanup = DateTime.UtcNow;
