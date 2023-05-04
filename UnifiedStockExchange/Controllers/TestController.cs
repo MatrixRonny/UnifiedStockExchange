@@ -5,7 +5,10 @@ using ServiceStack.OrmLite.Sqlite;
 using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
+using UnifiedStockExchange.Contracts;
 using UnifiedStockExchange.Domain.Entities;
+using UnifiedStockExchange.Domain.Enums;
+using static ServiceStack.OrmLite.Dapper.SqlMapper;
 using OrmLiteResultsFilterExtensions = UnifiedStockExchange.OrmLiteInternals.OrmLiteResultsFilterExtensions;
 using OrmLiteUtils = UnifiedStockExchange.OrmLiteInternals.OrmLiteUtils;
 using OrmLiteWriteCommandExtensions = UnifiedStockExchange.OrmLiteInternals.OrmLiteWriteCommandExtensions;
@@ -22,31 +25,55 @@ namespace UnifiedStockExchange.Controllers
         }
 
         [HttpGet]
-        public string Test()
+        public IList<PriceCandle> Test()
         {
-            IDbConnection dbConnection = _connectionFactory.CreateDbConnection();
+            TableDataAccess<PriceCandle> btcUsdtPrice = new TableDataAccess<PriceCandle>(_connectionFactory, "CoinMarketCap_BTC-USDT");
 
-            //// SELECT with LINQ
-            var sqlExpr = dbConnection.From<PriceCandle>().From("Digifinex_BTC-USDT").Where(it => it.Open > 5000);
-            string sql = sqlExpr.ToSelectStatement();
+            //FAIL
+            btcUsdtPrice.CreateTable(true);
 
-            //// DELETE with WHERE
-            var result = dbConnection.From<PriceCandle>().Where(it => it.Open > 5000);
-            result.ModelDef.Name = "Digifinex_BTC-USDT";
-            var sqlCmd = dbConnection.CreateCommand();
-            sqlCmd.CommandText = result.ToDeleteRowStatement();
+            //FAIL
+            btcUsdtPrice.Insert(new PriceCandle
+            {
+                Open = 1,
+                High = 2000,
+                Low = 1,
+                Close = 1000,
+                Interval = SampleInterval.OneMinute,
+                Date = DateTime.UtcNow
+            });
+            btcUsdtPrice.Insert(new PriceCandle
+            {
+                Open = 1000,
+                High = 4000,
+                Low = 500,
+                Close = 500,
+                Interval = SampleInterval.OneMinute,
+                Date = DateTime.UtcNow
+            });
 
-            //_dbConnection.Open();
-            //sqlCmd.ExecNonQuery();
-            //_dbConnection.Close();
+            //OK
+            btcUsdtPrice.CreateUpdateFilter().Where(it => it.Close == 500)
+                .ExecuteUpdate(new PriceCandle
+                {
+                    Open = 1000,
+                    High = 4000,
+                    Low = 500,
+                    Close = 700,
+                    Interval = SampleInterval.OneMinute,
+                    Date = DateTime.UtcNow
+                });
 
-            // INSERT to specific table
-            IDbCommand sqlCmd2 = dbConnection.CreateCommand();
-            SqliteOrmLiteDialectProvider.Instance.PrepareParameterizedInsertStatement<PriceCandle>(sqlCmd2);
-            ((IDbDataParameter)sqlCmd2.Parameters["@" + nameof(PriceCandle.Open)]).Value = 1234;
-            string sql2 = sqlCmd2.CommandText.ReplaceFirst(nameof(PriceCandle), "Digifinex_BTC-USDT");
+            //OK
+            btcUsdtPrice.CreateDeleteFilter().Where(it => it.Open == 10).ExecuteDelete();
 
-            return "Yaay!";
+            //OK
+            var result = btcUsdtPrice.CreateSelectFilter().Where(it => it.Open > 500).ExecuteSelect();
+
+            //FAIL
+            btcUsdtPrice.DropTable();
+
+            return result;
         }
     }
 
@@ -61,32 +88,83 @@ namespace UnifiedStockExchange.Controllers
             _tableName = tableName;
         }
 
-        public void CreateTable(string tableName, bool overwrite = false)
+        public void CreateTable(bool overwrite = false)
         {
-            _connection.Exec(dbCmd => OrmLiteWriteCommandExtensions.CreateTable<T>(dbCmd, tableName));
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(TableDataAccess<T>));
+
+            lock (_connection)
+            {
+                if (_connection.State == ConnectionState.Closed)
+                {
+                    _connection.Open();
+                }
+            }
+
+            _connection.Exec(dbCmd => OrmLiteWriteCommandExtensions.CreateTable<T>(dbCmd, _tableName, overwrite));
+        }
+
+        public void DropTable()
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(TableDataAccess<T>));
+
+            lock (_connection)
+            {
+                if (_connection.State == ConnectionState.Closed)
+                {
+                    _connection.Open();
+                }
+            }
+
+            _connection.Exec(dbCmd => OrmLiteWriteCommandExtensions.DropTable<T>(dbCmd, _tableName));
         }
 
         public SelectFilter<T> CreateSelectFilter()
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(TableDataAccess<T>));
+
             return new SelectFilter<T>(_connection, _tableName);
         }
 
         public DeleteFilter<T> CreateDeleteFilter()
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(TableDataAccess<T>));
+
             return new DeleteFilter<T>(_connection, _tableName);
         }
 
         public UpdateFilter<T> CreateUpdateFilter()
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(TableDataAccess<T>));
+
             return new UpdateFilter<T>(_connection, _tableName);
         }
 
         public void Insert(T entity)
         {
-            IDbCommand sqlCmd = _connection.CreateCommand();
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(TableDataAccess<T>));
 
+            lock (_connection)
+            {
+                if (_connection.State == ConnectionState.Closed)
+                {
+                    _connection.Open();
+                }
+            }
+
+            IDbCommand sqlCmd = _connection.CreateCommand();
             SqliteOrmLiteDialectProvider.Instance.PrepareParameterizedInsertStatement<T>(sqlCmd);
-            foreach (PropertyInfo prop in typeof(T).GetProperties(BindingFlags.Public | BindingFlags.GetProperty))
+            //sqlCmd.CommandText = sqlCmd.CommandText.Replace($"UPDATE ${nameof(T)}", "UPDATE ")
+
+            PropertyInfo[] allProps = typeof(T).GetProperties();
+            IEnumerable<PropertyInfo> publicPropsWithGetter = allProps
+                .Where(it => it.CanRead && it.GetGetMethod(false) != null);
+            foreach (PropertyInfo prop in publicPropsWithGetter)
             {
                 ((IDbDataParameter)sqlCmd.Parameters["@" + prop.Name]).Value = prop.GetValue(entity);
             }
@@ -95,8 +173,10 @@ namespace UnifiedStockExchange.Controllers
             sqlCmd.ExecuteNonQuery();
         }
 
+        bool _isDisposed;
         public void Dispose()
         {
+            _isDisposed = true;
             _connection.Close();
         }
     }
@@ -162,6 +242,11 @@ namespace UnifiedStockExchange.Controllers
 
             IDbCommand sqlCmd = _connection.CreateCommand();
             sqlCmd.CommandText = selectStatement;
+            foreach (var dbParam in _sqlExpression.Params)
+            {
+                sqlCmd.Parameters.Add(dbParam);
+            }
+
             return OrmLiteUtils.ConvertToList<T>(sqlCmd.ExecuteReader(), _sqlExpression.DialectProvider);
         }
     }
@@ -178,6 +263,17 @@ namespace UnifiedStockExchange.Controllers
             _sqlExpression.ModelDef.Name = tableName;
         }
 
+        public UpdateFilter(SqlExpression<T> sqlExpression, IDbConnection connection)
+        {
+            _sqlExpression = sqlExpression;
+            _connection = connection;
+        }
+
+        public UpdateFilter<T> Where(Expression<Func<T, bool>> predicate)
+        {
+            return new UpdateFilter<T>(_sqlExpression.Where(predicate), _connection);
+        }
+
         public void ExecuteUpdate(T entity)
         {
             lock (_connection)
@@ -190,6 +286,21 @@ namespace UnifiedStockExchange.Controllers
 
             IDbCommand sqlCmd = _connection.CreateCommand();
             _sqlExpression.PrepareUpdateStatement(sqlCmd, entity);
+            OrmLiteResultsFilterExtensions.ExecNonQuery(sqlCmd);
+        }
+
+        public void ExecuteUpdate(Dictionary<string, object> updateFields)
+        {
+            lock (_connection)
+            {
+                if (_connection.State == ConnectionState.Closed)
+                {
+                    _connection.Open();
+                }
+            }
+
+            IDbCommand sqlCmd = _connection.CreateCommand();
+            _sqlExpression.PrepareUpdateStatement(sqlCmd, updateFields);
             OrmLiteResultsFilterExtensions.ExecNonQuery(sqlCmd);
         }
     }
@@ -231,6 +342,11 @@ namespace UnifiedStockExchange.Controllers
 
             IDbCommand sqlCmd = _connection.CreateCommand();
             sqlCmd.CommandText = deleteStatement;
+            foreach (var dbParam in _sqlExpression.Params)
+            {
+                sqlCmd.Parameters.Add(dbParam);
+            }
+
             OrmLiteResultsFilterExtensions.ExecNonQuery(sqlCmd);
         }
     }
