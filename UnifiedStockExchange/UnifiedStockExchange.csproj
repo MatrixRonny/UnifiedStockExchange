@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ServiceStack.OrmLite" Version="6.8.0" />
     <PackageReference Include="ServiceStack.OrmLite.Sqlite" Version="6.8.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
   </ItemGroup>
@@ -15,6 +14,10 @@
   <ItemGroup>
     <Folder Include="Domain\DataTransfer\" />
     <Folder Include="Exceptions\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UnifiedStockExchange.OrmLiteInternals\UnifiedStockExchange.OrmLiteInternals.csproj" />
   </ItemGroup>
 
 </Project>

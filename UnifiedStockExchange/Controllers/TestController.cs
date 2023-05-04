@@ -6,6 +6,12 @@ using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
 using UnifiedStockExchange.Domain.Entities;
+using UnifiedStockExchange.OrmLiteInternals;
+using OrmLiteConfigExtensions = UnifiedStockExchange.OrmLiteInternals.OrmLiteConfigExtensions;
+using OrmLiteReadCommandExtensions = UnifiedStockExchange.OrmLiteInternals.OrmLiteReadCommandExtensions;
+using OrmLiteResultsFilterExtensions = UnifiedStockExchange.OrmLiteInternals.OrmLiteResultsFilterExtensions;
+using OrmLiteUtils = UnifiedStockExchange.OrmLiteInternals.OrmLiteUtils;
+using OrmLiteWriteCommandExtensions = UnifiedStockExchange.OrmLiteInternals.OrmLiteWriteCommandExtensions;
 
 namespace UnifiedStockExchange.Controllers
 {
@@ -47,29 +53,44 @@ namespace UnifiedStockExchange.Controllers
         }
     }
 
-    public class TableDataAccess<T>
+    public class TableDataAccess<T> : IDisposable
     {
-        private readonly OrmLiteConnectionFactory _connectionFactory;
+        private readonly IDbConnection _connection;
         private readonly string _tableName;
 
         public TableDataAccess(OrmLiteConnectionFactory connectionFactory, string tableName)
         {
-            _connectionFactory = connectionFactory;
+            _connection = connectionFactory.CreateDbConnection();
             _tableName = tableName;
         }
 
-        public SelectFilter<T> CreateFilter()
+        public void CreateTable(string tableName, bool overwrite = false)
         {
-            IDbConnection dbConnection = _connectionFactory.CreateDbConnection();
-            return new SelectFilter<T>(dbConnection.From<T>().From(_tableName), dbConnection);
+            ModelDefinition modelDef = typeof(T).GetModelDefinition();
+            modelDef.Name = tableName;
+            _connection.Exec(dbCmd => OrmLiteWriteCommandExtensions.CreateTable(dbCmd, overwrite, modelDef));
+        }
+
+        public SelectFilter<T> CreateSelectFilter()
+        {
+            return new SelectFilter<T>(_connection, _tableName);
+        }
+
+        public DeleteFilter<T> CreateDeleteFilter()
+        {
+            return new DeleteFilter<T>(_connection, _tableName);
+        }
+
+        public UpdateFilter<T> CreateUpdateFilter()
+        {
+            return new UpdateFilter<T>(_connection, _tableName);
         }
 
         public void Insert(T entity)
         {
-            IDbConnection dbConnection = _connectionFactory.CreateDbConnection();
-            IDbCommand sqlCmd = dbConnection.CreateCommand();
-            SqliteOrmLiteDialectProvider.Instance.PrepareParameterizedInsertStatement<T>(sqlCmd);
+            IDbCommand sqlCmd = _connection.CreateCommand();
 
+            SqliteOrmLiteDialectProvider.Instance.PrepareParameterizedInsertStatement<T>(sqlCmd);
             foreach (PropertyInfo prop in typeof(T).GetProperties(BindingFlags.Public | BindingFlags.GetProperty))
             {
                 ((IDbDataParameter)sqlCmd.Parameters["@" + prop.Name]).Value = prop.GetValue(entity);
@@ -78,12 +99,23 @@ namespace UnifiedStockExchange.Controllers
             //string insertStatement = sqlCmd.CommandText.ReplaceFirst(nameof(T), _tableName);
             sqlCmd.ExecuteNonQuery();
         }
+
+        public void Dispose()
+        {
+            _connection.Close();
+        }
     }
 
     public class SelectFilter<T>
     {
-        private readonly SqlExpression<T> _sqlExpression;
-        private readonly IDbConnection _connection;
+        readonly SqlExpression<T> _sqlExpression;
+        readonly IDbConnection _connection;
+
+        public SelectFilter(IDbConnection connection, string tableName)
+        {
+            _connection = connection;
+            _sqlExpression = _connection.From<T>(tableName);
+        }
 
         public SelectFilter(SqlExpression<T> sqlExpression, IDbConnection connection)
         {
@@ -123,40 +155,88 @@ namespace UnifiedStockExchange.Controllers
 
         public IList<T> ExecuteSelect()
         {
-            using (_connection)
+            lock (_connection)
             {
                 if (_connection.State == ConnectionState.Closed)
                 {
                     _connection.Open();
                 }
-
-                string selectStatement = _connection.CreateCommand().CommandText = _sqlExpression.ToSelectStatement();
-
-                IDbCommand sqlCmd = _connection.CreateCommand();
-                sqlCmd.Connection = _connection;
-                sqlCmd.CommandText = selectStatement;
-                return sqlCmd.ExecuteReader().ConvertToList<T>(_sqlExpression.DialectProvider);
             }
+
+            string selectStatement = _sqlExpression.ToSelectStatement();
+
+            IDbCommand sqlCmd = _connection.CreateCommand();
+            sqlCmd.CommandText = selectStatement;
+            return OrmLiteUtils.ConvertToList<T>(sqlCmd.ExecuteReader(), _sqlExpression.DialectProvider);
+        }
+    }
+
+    public class UpdateFilter<T>
+    {
+        readonly SqlExpression<T> _sqlExpression;
+        private IDbConnection _connection;
+
+        public UpdateFilter(IDbConnection connection, string tableName)
+        {
+            _connection = connection;
+            _sqlExpression = _connection.From<T>();
+            _sqlExpression.ModelDef.Name = tableName;
+        }
+
+        public void ExecuteUpdate(T entity)
+        {
+            lock (_connection)
+            {
+                if (_connection.State == ConnectionState.Closed)
+                {
+                    _connection.Open();
+                }
+            }
+
+            IDbCommand sqlCmd = _connection.CreateCommand();
+            _sqlExpression.PrepareUpdateStatement(sqlCmd, entity);
+            OrmLiteResultsFilterExtensions.ExecNonQuery(sqlCmd);
         }
     }
 
     public class DeleteFilter<T>
     {
-        private readonly SqlExpression<T> _sqlExpression;
+        readonly SqlExpression<T> _sqlExpression;
+        readonly IDbConnection _connection;
 
-        public DeleteFilter(SqlExpression<T> sqlExpression)
+        public DeleteFilter(IDbConnection connection, string tableName)
+        {
+            _connection = connection;
+            _sqlExpression = _connection.From<T>();
+            _sqlExpression.ModelDef.Name = tableName;
+        }
+
+        public DeleteFilter(SqlExpression<T> sqlExpression, IDbConnection connection)
         {
             _sqlExpression = sqlExpression;
+            _connection = connection;
         }
 
         public DeleteFilter<T> Where(Expression<Func<T, bool>> predicate)
         {
-            return new DeleteFilter<T>(_sqlExpression.Where(predicate));
+            return new DeleteFilter<T>(_sqlExpression.Where(predicate), _connection);
         }
 
         public void ExecuteDelete()
         {
-            throw new NotImplementedException();
+            lock (_connection)
+            {
+                if (_connection.State == ConnectionState.Closed)
+                {
+                    _connection.Open();
+                }
+            }
+
+            string deleteStatement = _sqlExpression.ToDeleteRowStatement();
+
+            IDbCommand sqlCmd = _connection.CreateCommand();
+            sqlCmd.CommandText = deleteStatement;
+            OrmLiteResultsFilterExtensions.ExecNonQuery(sqlCmd);
         }
     }
 }
