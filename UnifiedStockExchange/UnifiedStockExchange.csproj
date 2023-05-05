@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ServiceStack.OrmLite.Sqlite" Version="6.8.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
   </ItemGroup>
 
@@ -17,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\UnifiedStockExchange.OrmLiteInternals\UnifiedStockExchange.OrmLiteInternals.csproj" />
+    <ProjectReference Include="..\ServiceStack.OrmLite\src\ServiceStack.OrmLite.Sqlite\ServiceStack.OrmLite.Sqlite.csproj" />
   </ItemGroup>
 
 </Project>

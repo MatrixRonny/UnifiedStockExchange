@@ -1,17 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ServiceStack;
 using ServiceStack.OrmLite;
-using ServiceStack.OrmLite.Sqlite;
 using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
 using UnifiedStockExchange.Contracts;
 using UnifiedStockExchange.Domain.Entities;
 using UnifiedStockExchange.Domain.Enums;
-using static ServiceStack.OrmLite.Dapper.SqlMapper;
-using OrmLiteResultsFilterExtensions = UnifiedStockExchange.OrmLiteInternals.OrmLiteResultsFilterExtensions;
-using OrmLiteUtils = UnifiedStockExchange.OrmLiteInternals.OrmLiteUtils;
-using OrmLiteWriteCommandExtensions = UnifiedStockExchange.OrmLiteInternals.OrmLiteWriteCommandExtensions;
 
 namespace UnifiedStockExchange.Controllers
 {
@@ -27,6 +22,7 @@ namespace UnifiedStockExchange.Controllers
         [HttpGet]
         public IList<PriceCandle> Test()
         {
+            //_connectionFactory.OpenDbConnection()
             TableDataAccess<PriceCandle> btcUsdtPrice = new TableDataAccess<PriceCandle>(_connectionFactory, "CoinMarketCap_BTC-USDT");
 
             //FAIL
@@ -81,11 +77,13 @@ namespace UnifiedStockExchange.Controllers
     {
         private readonly IDbConnection _connection;
         private readonly string _tableName;
+        IOrmLiteDialectProvider _dialectProvider;
 
         public TableDataAccess(OrmLiteConnectionFactory connectionFactory, string tableName)
         {
             _connection = connectionFactory.CreateDbConnection();
             _tableName = tableName;
+            _dialectProvider = connectionFactory.DialectProvider;
         }
 
         public void CreateTable(bool overwrite = false)
@@ -101,7 +99,7 @@ namespace UnifiedStockExchange.Controllers
                 }
             }
 
-            _connection.Exec(dbCmd => OrmLiteWriteCommandExtensions.CreateTable<T>(dbCmd, _tableName, overwrite));
+            _connection.CreateTable<T>(_tableName, overwrite);
         }
 
         public void DropTable()
@@ -117,7 +115,7 @@ namespace UnifiedStockExchange.Controllers
                 }
             }
 
-            _connection.Exec(dbCmd => OrmLiteWriteCommandExtensions.DropTable<T>(dbCmd, _tableName));
+            _connection.DropTable<T>(_tableName);
         }
 
         public SelectFilter<T> CreateSelectFilter()
@@ -158,8 +156,7 @@ namespace UnifiedStockExchange.Controllers
             }
 
             IDbCommand sqlCmd = _connection.CreateCommand();
-            SqliteOrmLiteDialectProvider.Instance.PrepareParameterizedInsertStatement<T>(sqlCmd);
-            //sqlCmd.CommandText = sqlCmd.CommandText.Replace($"UPDATE ${nameof(T)}", "UPDATE ")
+            _dialectProvider.PrepareParameterizedInsertStatement<T>(sqlCmd);
 
             PropertyInfo[] allProps = typeof(T).GetProperties();
             IEnumerable<PropertyInfo> publicPropsWithGetter = allProps
@@ -260,7 +257,7 @@ namespace UnifiedStockExchange.Controllers
         {
             _connection = connection;
             _sqlExpression = _connection.From<T>();
-            _sqlExpression.ModelDef.Name = tableName;
+            _sqlExpression.ModelDef.Alias = tableName;
         }
 
         public UpdateFilter(SqlExpression<T> sqlExpression, IDbConnection connection)
@@ -314,7 +311,7 @@ namespace UnifiedStockExchange.Controllers
         {
             _connection = connection;
             _sqlExpression = _connection.From<T>();
-            _sqlExpression.ModelDef.Name = tableName;
+            _sqlExpression.ModelDef.Alias = tableName;
         }
 
         public DeleteFilter(SqlExpression<T> sqlExpression, IDbConnection connection)
