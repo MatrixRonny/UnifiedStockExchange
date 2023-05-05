@@ -1,0 +1,3 @@
+[submodule "ServiceStack.OrmLite"]
+	path = ServiceStack.OrmLite
+	url = git@github.com:ServiceStack/ServiceStack.OrmLite.git
