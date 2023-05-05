@@ -13,6 +13,7 @@ namespace UnifiedStockExchange.DataAccess
         public TableDataAccess(OrmLiteConnectionFactory connectionFactory, string tableName)
         {
             _connection = connectionFactory.CreateDbConnection();
+            _connection.TableAlias(tableName);
             _tableName = tableName;
             _dialectProvider = connectionFactory.DialectProvider;
         }
@@ -87,7 +88,7 @@ namespace UnifiedStockExchange.DataAccess
             }
 
             IDbCommand sqlCmd = _connection.CreateCommand();
-            _dialectProvider.PrepareParameterizedInsertStatement<T>(sqlCmd);
+            _dialectProvider.PrepareParameterizedInsertStatement<T>(sqlCmd, tableName: _tableName);
 
             PropertyInfo[] allProps = typeof(T).GetProperties();
             IEnumerable<PropertyInfo> publicPropsWithGetter = allProps
@@ -97,7 +98,6 @@ namespace UnifiedStockExchange.DataAccess
                 ((IDbDataParameter)sqlCmd.Parameters["@" + prop.Name]).Value = prop.GetValue(entity);
             }
 
-            //string insertStatement = sqlCmd.CommandText.ReplaceFirst(nameof(T), _tableName);
             sqlCmd.ExecuteNonQuery();
         }
 

@@ -22,11 +22,13 @@ namespace UnifiedStockExchange.Controllers
         {
             //_connectionFactory.OpenDbConnection()
             TableDataAccess<PriceCandle> btcUsdtPrice = new TableDataAccess<PriceCandle>(_connectionFactory, "CoinMarketCap_BTC-USDT");
+            TableDataAccess<PriceCandle> ethUsdtPrice = new TableDataAccess<PriceCandle>(_connectionFactory, "CoinMarketCap_ETH-USDT");
 
             //OK
             btcUsdtPrice.CreateTable(true);
+            ethUsdtPrice.CreateTable(true);
 
-            //FAIL
+            //OK
             btcUsdtPrice.Insert(new PriceCandle
             {
                 Open = 1,
@@ -36,12 +38,30 @@ namespace UnifiedStockExchange.Controllers
                 Interval = SampleInterval.OneMinute,
                 Date = DateTime.UtcNow
             });
+            ethUsdtPrice.Insert(new PriceCandle
+            {
+                Open = 1,
+                High = 200,
+                Low = 1,
+                Close = 100,
+                Interval = SampleInterval.OneMinute,
+                Date = DateTime.UtcNow
+            });
             btcUsdtPrice.Insert(new PriceCandle
             {
                 Open = 1000,
                 High = 4000,
                 Low = 500,
                 Close = 500,
+                Interval = SampleInterval.OneMinute,
+                Date = DateTime.UtcNow
+            });
+            ethUsdtPrice.Insert(new PriceCandle
+            {
+                Open = 100,
+                High = 400,
+                Low = 50,
+                Close = 50,
                 Interval = SampleInterval.OneMinute,
                 Date = DateTime.UtcNow
             });
@@ -57,17 +77,30 @@ namespace UnifiedStockExchange.Controllers
                     Interval = SampleInterval.OneMinute,
                     Date = DateTime.UtcNow
                 });
+            ethUsdtPrice.CreateUpdateFilter().Where(it => it.Close == 500)
+                .ExecuteUpdate(new PriceCandle
+                {
+                    Open = 100,
+                    High = 400,
+                    Low = 50,
+                    Close = 70,
+                    Interval = SampleInterval.OneMinute,
+                    Date = DateTime.UtcNow
+                });
 
             //OK
-            btcUsdtPrice.CreateDeleteFilter().Where(it => it.Open == 10).ExecuteDelete();
+            btcUsdtPrice.CreateDeleteFilter().Where(it => it.Open == 1).ExecuteDelete();
+            ethUsdtPrice.CreateDeleteFilter().Where(it => it.Open == 1).ExecuteDelete();
 
             //OK
-            var result = btcUsdtPrice.CreateSelectFilter().Where(it => it.Open > 500).ExecuteSelect();
+            var result1 = btcUsdtPrice.CreateSelectFilter().Where(it => it.Open > 500).ExecuteSelect();
+            var result2 = ethUsdtPrice.CreateSelectFilter().Where(it => it.Open > 50).ExecuteSelect();
 
-            //FAIL
+            //OK
             btcUsdtPrice.DropTable();
+            ethUsdtPrice.DropTable();
 
-            return result;
+            return result1.Union(result2).ToArray();
         }
     }
 }
