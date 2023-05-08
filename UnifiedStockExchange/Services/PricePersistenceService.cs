@@ -1,9 +1,11 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using ServiceStack.OrmLite;
 using System.Data;
 using UnifiedStockExchange.DataAccess;
 using UnifiedStockExchange.Domain.Entities;
+using UnifiedStockExchange.Utility;
 
 namespace UnifiedStockExchange.Services
 {
@@ -29,7 +31,7 @@ namespace UnifiedStockExchange.Services
 
         public void RecordPrice(string exchangeName, ValueTuple<string, string> tradingPair, DateTime time, decimal price, decimal amount)
         {
-            string exchangeQuote = $"{exchangeName}|{tradingPair.Item1}-{tradingPair.Item2}";
+            string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
 
             DateTime lastWrite;
             lock (_lastWrite)
@@ -107,6 +109,37 @@ namespace UnifiedStockExchange.Services
                     priceCandle.Volume = amount;
                 }
             }
+        }
+        
+        public void FlushAndRemoveFromCache(string exchangeName, ValueTuple<string, string> tradingPair)
+        {
+            string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
+            lock(_lastWrite)
+            {
+                if(!_lastWrite.ContainsKey(exchangeQuote))
+                    return;
+            }
+
+            PriceCandle priceCandle = _priceData[exchangeQuote];
+            lock (priceCandle)
+            {
+                //INFO: This is not correct, but saves performance.
+                priceCandle.Close = priceCandle.Open;
+
+                TableDataAccess<PriceCandle> dataAccess = _tableAccess[exchangeQuote];
+                lock (dataAccess)
+                {
+                    dataAccess.Insert(_priceData[exchangeQuote]);
+                }
+            }
+
+            lock (_lastWrite)
+            {
+                _lastWrite.Remove(exchangeQuote);
+                _priceData.Remove(exchangeQuote);
+                _tableAccess.Remove(exchangeQuote);
+            }
+
         }
 
         private static DateTime TruncateDateToMinute(DateTime dateTimeNow)

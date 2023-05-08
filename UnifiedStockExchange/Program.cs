@@ -1,5 +1,5 @@
 using ServiceStack.OrmLite;
-using System.Data;
+using System.Text.Json.Serialization;
 using UnifiedStockExchange.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,15 +13,18 @@ void AddServices(WebApplicationBuilder builder)
 {
     IConfiguration config = builder.Configuration;
 
-    builder.Services.AddControllers();
+    builder.Services.AddControllers()
+        .AddJsonOptions(options =>
+            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())
+        );
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
     string connectionString = config.GetConnectionString("DefaultConnection");
     builder.Services.AddSingleton(new OrmLiteConnectionFactory(connectionString, SqliteDialect.Provider));
-
-    builder.Services.AddSingleton<PricePersistenceService>();
+    
+    InitializeServices(builder);
 }
 
 static void ConfigureServices(WebApplication app)
@@ -35,9 +38,16 @@ static void ConfigureServices(WebApplication app)
         });
     }
 
-    app.UseHttpsRedirection();
+    // app.UseHttpsRedirection();
 
-    app.UseAuthorization();
+    //app.UseAuthorization();
+    app.UseWebSockets();
 
     app.MapControllers();
+}
+
+static void InitializeServices(WebApplicationBuilder builder)
+{
+    builder.Services.AddSingleton<PricePersistenceService>();
+    builder.Services.AddSingleton<PriceExchangeService>();
 }
