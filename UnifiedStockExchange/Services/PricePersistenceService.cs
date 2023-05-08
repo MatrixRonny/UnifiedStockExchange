@@ -5,6 +5,7 @@ using ServiceStack.OrmLite;
 using System.Data;
 using UnifiedStockExchange.DataAccess;
 using UnifiedStockExchange.Domain.Entities;
+using UnifiedStockExchange.Domain.Enums;
 using UnifiedStockExchange.Utility;
 
 namespace UnifiedStockExchange.Services
@@ -65,13 +66,17 @@ namespace UnifiedStockExchange.Services
                     _priceData[exchangeQuote] = new PriceCandle
                     {
                         Date = TruncateDateToMinute(dateTimeNow),
+                        Interval = SampleInterval.OneMinute,
                         Open = price,
                         High = price,
                         Low = price,
                         Close = price,
                         Volume = 0  // Will be adjusted when updating PriceCandle
                     };
-                    _tableAccess[exchangeQuote] = new TableDataAccess<PriceCandle>(_connectionFactory, "PriceData_" + exchangeQuote);
+
+                    TableDataAccess<PriceCandle> dataAccess = new TableDataAccess<PriceCandle>(_connectionFactory, "PriceData_" + exchangeQuote);
+                    dataAccess.CreateTable();
+                    _tableAccess[exchangeQuote] = dataAccess;
                 }
                 else
                 {
