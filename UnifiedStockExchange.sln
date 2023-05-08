@@ -9,6 +9,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite", "Ser
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite.Sqlite", "ServiceStack.OrmLite\src\ServiceStack.OrmLite.Sqlite\ServiceStack.OrmLite.Sqlite.csproj", "{D1EC1489-D978-4582-810C-A1CC9CE7BECD}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnifiedStockExchange.CSharp", "UnifiedStockExchange.CSharp\UnifiedStockExchange.CSharp.csproj", "{4212D988-2DE1-497F-BC5C-2A917C00DC09}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnifiedStockExchange.CSharp.Tests", "UnifiedStockExchange.CSharp.Tests\UnifiedStockExchange.CSharp.Tests.csproj", "{9B1F6D7E-51F6-4B79-9AC3-090EEB8C86C9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnifiedStockExchangeSdk", "UnifiedStockExchange.CSharp.Tests\UnifiedStockExchangeSdk\src\UnifiedStockExchangeSdk\UnifiedStockExchangeSdk.csproj", "{3D224447-07DE-4101-BD00-34F24CFEDB0F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnifiedStockExchangeSdk.CSharp", "UnifiedStockExchangeSdk.CSharp\src\UnifiedStockExchangeSdk.CSharp\UnifiedStockExchangeSdk.CSharp.csproj", "{FC56D4C3-455F-4344-B163-D7EBD43E5CC9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +35,22 @@ Global
 		{D1EC1489-D978-4582-810C-A1CC9CE7BECD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D1EC1489-D978-4582-810C-A1CC9CE7BECD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D1EC1489-D978-4582-810C-A1CC9CE7BECD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4212D988-2DE1-497F-BC5C-2A917C00DC09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4212D988-2DE1-497F-BC5C-2A917C00DC09}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4212D988-2DE1-497F-BC5C-2A917C00DC09}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4212D988-2DE1-497F-BC5C-2A917C00DC09}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B1F6D7E-51F6-4B79-9AC3-090EEB8C86C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B1F6D7E-51F6-4B79-9AC3-090EEB8C86C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B1F6D7E-51F6-4B79-9AC3-090EEB8C86C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B1F6D7E-51F6-4B79-9AC3-090EEB8C86C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D224447-07DE-4101-BD00-34F24CFEDB0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D224447-07DE-4101-BD00-34F24CFEDB0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D224447-07DE-4101-BD00-34F24CFEDB0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D224447-07DE-4101-BD00-34F24CFEDB0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC56D4C3-455F-4344-B163-D7EBD43E5CC9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC56D4C3-455F-4344-B163-D7EBD43E5CC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC56D4C3-455F-4344-B163-D7EBD43E5CC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC56D4C3-455F-4344-B163-D7EBD43E5CC9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

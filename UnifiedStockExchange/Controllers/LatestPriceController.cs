@@ -16,13 +16,13 @@ namespace UnifiedStockExchange.Controllers
             _priceService = priceService;
         }
 
-        [HttpGet("{exchange}/{fromCurency}/{toCurrency}/ws")]
-        public async Task Get(string exchange, string fromCurrency, string toCurrency)
+        [HttpGet("{exchangeName}/{fromCurency}/{toCurrency}/ws")]
+        public async Task Get(string exchangeName, string fromCurrency, string toCurrency)
         {
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
                 using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                await SendPriceUpdates(exchange, (fromCurrency, toCurrency), webSocket);
+                await SendPriceUpdates(exchangeName, (fromCurrency, toCurrency), webSocket);
             }
             else
             {
@@ -30,7 +30,7 @@ namespace UnifiedStockExchange.Controllers
             }
         }
 
-        private async Task SendPriceUpdates(string exchange, ValueTuple<string, string> tradingPair, WebSocket webSocket)
+        private async Task SendPriceUpdates(string exchangeName, ValueTuple<string, string> tradingPair, WebSocket webSocket)
         {
             PriceUpdate? priceListener = null;
             try
@@ -59,7 +59,7 @@ namespace UnifiedStockExchange.Controllers
                         Monitor.Exit(lockObject);
                     }
                 };
-                _priceService.RegisterListener(exchange, tradingPair, priceListener);
+                _priceService.RegisterListener(exchangeName, tradingPair, priceListener);
 
                 // Wait until other side closes websoket.
                 var receiveResult = await webSocket.ReceiveAsync(new byte[20], CancellationToken.None);
@@ -68,7 +68,7 @@ namespace UnifiedStockExchange.Controllers
             {
                 if (priceListener != null)
                 {
-                    _priceService.RegisterListener(exchange, tradingPair, priceListener);
+                    _priceService.RegisterListener(exchangeName, tradingPair, priceListener);
                 }
             }
         }

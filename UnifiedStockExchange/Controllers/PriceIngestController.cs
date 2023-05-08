@@ -9,6 +9,8 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Globalization;
 using System.Data;
+using System.Dynamic;
+using System.Diagnostics;
 
 namespace UnifiedStockExchange.Controllers
 {
@@ -25,13 +27,15 @@ namespace UnifiedStockExchange.Controllers
             _persistenceService = persistenceService;
         }
 
-        [HttpGet("{exchange}/{fromCurrency}/{toCurrency}/ws")]
+        [HttpGet("{exchangeName}/{fromCurrency}/{toCurrency}/ws")]
         public async Task Get(string exchangeName, string fromCurrency, string toCurrency)
         {
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
-                using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                await RecordPriceUpdates(exchangeName, (fromCurrency, toCurrency), webSocket);
+                using (WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync())
+                {
+                    await RecordPriceUpdates(exchangeName, (fromCurrency, toCurrency), webSocket);
+                }
             }
             else
             {
@@ -63,19 +67,22 @@ namespace UnifiedStockExchange.Controllers
                                 await SendMessageAndClose(webSocket, "Only text messages supported.");
                                 return;
                             }
+
+                            ms.Write(buffer.Array!, 0, wsResult.Count);
                         }
                         while (!wsResult.EndOfMessage);
 
                         ms.Seek(0, SeekOrigin.Begin);
-                        string json = Encoding.UTF8.GetString(ms.GetBuffer());
-                        dynamic jsonObject = JsonSerializer.Deserialize<JsonObject>(json)!;
+                        string json = Encoding.UTF8.GetString(new ArraySegment<byte>(ms.GetBuffer(), 0, (int)ms.Length));
+                        //dynamic jsonObject = JsonSerializer.Deserialize<JsonObject>(json)!;
+                        JsonObject jsonObject = JsonSerializer.Deserialize<JsonObject>(json)!;
 
                         try
                         {
-                            long unixTimeMillis = jsonObject.time;
+                            long unixTimeMillis = (long)jsonObject["time"]!;
                             DateTime time = new DateTime(1970, 1, 1, 0, 0, 0, 0).AddMilliseconds(unixTimeMillis);
-                            decimal price = jsonObject.price;
-                            decimal amount = jsonObject.amount;
+                            decimal price = (decimal)jsonObject["price"]!;
+                            decimal amount = (decimal)jsonObject["amount"]!;
 
                             _persistenceService.RecordPrice(exchangeName, tradingPair, time, price, amount);
                             priceHandler(time, price, amount);
@@ -91,10 +98,8 @@ namespace UnifiedStockExchange.Controllers
             }
             finally
             {
-                if (priceHandler != null)
-                {
-                    _priceService.RegisterListener(exchangeName, tradingPair, priceHandler);
-                }
+                _priceService.CancelListen(exchangeName, tradingPair);
+                _persistenceService.FlushAndRemoveFromCache(exchangeName, tradingPair);
             }
         }
     }

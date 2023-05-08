@@ -1,5 +1,6 @@
 ﻿using UnifiedStockExchange.Contracts;
 using UnifiedStockExchange.Domain.Utility;
+using UnifiedStockExchange.Utility;
 
 namespace UnifiedStockExchange.Services
 {
@@ -15,11 +16,11 @@ namespace UnifiedStockExchange.Services
             lock (_priceHandlers)
             lock (_priceListeners)
             {
-                string quote = $"{tradingPair.Item1}-{tradingPair.Item2}";
+                string quote = tradingPair.ToQuote();
                 if (_priceQuotes.ContainsKey(exchangeName) && _priceQuotes[exchangeName].Contains(quote))
                     throw new ApplicationException("A listener has already been registered for that exchange and quote.");
 
-                string exchangeQuote = $"{exchangeName}|{quote}";
+                string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
                 switch (exchangeName)
                 {
                     case "CoinMarketCap":
@@ -67,8 +68,8 @@ namespace UnifiedStockExchange.Services
             lock (_priceHandlers)
             lock (_priceListeners)
             {
-                string quote = $"{tradingPair.Item1}-{tradingPair.Item2}";
-                string exchangeQuote = $"{exchangeName}|{quote}";
+                string quote = tradingPair.ToQuote();
+                string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
              
                 PriceUpdate del = _priceHandlers[exchangeQuote];
                 _priceListeners.Remove(del);
@@ -87,7 +88,7 @@ namespace UnifiedStockExchange.Services
             lock (_priceHandlers)
             lock (_priceListeners)
             {
-                string exchangeQuote = $"{exchangeName}|{tradingPair.Item1}-{tradingPair.Item2}";
+                string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
                 if (!_priceHandlers.ContainsKey(exchangeQuote))
                     throw new ApplicationException("Specified exchange and quote does not exist.");
 
@@ -101,7 +102,7 @@ namespace UnifiedStockExchange.Services
             lock (_priceHandlers)
             lock (_priceListeners)
             {
-                string exchangeQuote = $"{exchangeName}|{tradingPair.Item1}-{tradingPair.Item2}";
+                string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
                 if (!_priceHandlers.ContainsKey(exchangeQuote))
                     throw new ApplicationException("Specified exchange and quote does not exist.");
 
