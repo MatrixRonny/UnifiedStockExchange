@@ -9,12 +9,13 @@ namespace UnifiedStockExchange.Services
         Dictionary<string, PriceUpdate> _priceHandlers = new Dictionary<string, PriceUpdate>();
         Dictionary<PriceUpdate, List<PriceUpdate>> _priceListeners = new Dictionary<PriceUpdate, List<PriceUpdate>>();
 
-        public PriceUpdate ListenForUpdates(string exchangeName, string quote)
+        public PriceUpdate ListenForUpdates(string exchangeName, ValueTuple<string, string> tradingPair)
         {
             lock (_priceQuotes)
             lock (_priceHandlers)
             lock (_priceListeners)
             {
+                string quote = $"{tradingPair.Item1}-{tradingPair.Item2}";
                 if (_priceQuotes.ContainsKey(exchangeName) && _priceQuotes[exchangeName].Contains(quote))
                     throw new ApplicationException("A listener has already been registered for that exchange and quote.");
 
@@ -60,12 +61,13 @@ namespace UnifiedStockExchange.Services
             }
         }
 
-        public void CancelListen(string exchangeName, string quote)
+        public void CancelListen(string exchangeName, ValueTuple<string, string> tradingPair)
         {
             lock (_priceQuotes)
             lock (_priceHandlers)
             lock (_priceListeners)
             {
+                string quote = $"{tradingPair.Item1}-{tradingPair.Item2}";
                 string exchangeQuote = $"{exchangeName}|{quote}";
              
                 PriceUpdate del = _priceHandlers[exchangeQuote];
@@ -80,12 +82,12 @@ namespace UnifiedStockExchange.Services
             }
         }
 
-        public void RegisterListener(string exchangeName, string quote, PriceUpdate listener)
+        public void RegisterListener(string exchangeName, ValueTuple<string, string> tradingPair, PriceUpdate listener)
         {
             lock (_priceHandlers)
             lock (_priceListeners)
             {
-                string exchangeQuote = $"{exchangeName}|{quote}";
+                string exchangeQuote = $"{exchangeName}|{tradingPair.Item1}-{tradingPair.Item2}";
                 if (!_priceHandlers.ContainsKey(exchangeQuote))
                     throw new ApplicationException("Specified exchange and quote does not exist.");
 
@@ -94,12 +96,12 @@ namespace UnifiedStockExchange.Services
             }
         }
 
-        public void RemoveListener(string exchangeName, string quote, PriceUpdate listener)
+        public void RemoveListener(string exchangeName, ValueTuple<string, string> tradingPair, PriceUpdate listener)
         {
             lock (_priceHandlers)
             lock (_priceListeners)
             {
-                string exchangeQuote = $"{exchangeName}|{quote}";
+                string exchangeQuote = $"{exchangeName}|{tradingPair.Item1}-{tradingPair.Item2}";
                 if (!_priceHandlers.ContainsKey(exchangeQuote))
                     throw new ApplicationException("Specified exchange and quote does not exist.");
 

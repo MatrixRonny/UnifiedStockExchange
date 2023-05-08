@@ -8,6 +8,7 @@ using UnifiedStockExchange.Services;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Globalization;
+using System.Data;
 
 namespace UnifiedStockExchange.Controllers
 {
@@ -16,19 +17,21 @@ namespace UnifiedStockExchange.Controllers
         // Stock Data library in Python: https://github.com/ccxt/ccxt
 
         private readonly PriceExchangeService _priceService;
+        private readonly PricePersistenceService _persistenceService;
 
-        public PriceIngestController(PriceExchangeService priceService)
+        public PriceIngestController(PriceExchangeService priceService, PricePersistenceService persistenceService)
         {
             _priceService = priceService;
+            _persistenceService = persistenceService;
         }
 
-        [HttpGet("{exchange}/{quote}/ws")]
-        public async Task Get(string exchange, string quote)
+        [HttpGet("{exchange}/{fromCurrency}/{toCurrency}/ws")]
+        public async Task Get(string exchangeName, string fromCurrency, string toCurrency)
         {
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
                 using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                await RecordPriceUpdates(exchange, quote, webSocket);
+                await RecordPriceUpdates(exchangeName, (fromCurrency, toCurrency), webSocket);
             }
             else
             {
@@ -36,9 +39,9 @@ namespace UnifiedStockExchange.Controllers
             }
         }
 
-        private async Task RecordPriceUpdates(string exchange, string quote, WebSocket webSocket)
+        private async Task RecordPriceUpdates(string exchangeName, ValueTuple<string, string> tradingPair, WebSocket webSocket)
         {
-            PriceUpdate? priceHandler = _priceService.ListenForUpdates(exchange, quote);
+            PriceUpdate? priceHandler = _priceService.ListenForUpdates(exchangeName, tradingPair);
             try
             {
                 // https://stackoverflow.com/a/23784968/2109230
@@ -74,9 +77,8 @@ namespace UnifiedStockExchange.Controllers
                             decimal price = jsonObject.price;
                             decimal amount = jsonObject.amount;
 
+                            _persistenceService.RecordPrice(exchangeName, tradingPair, time, price, amount);
                             priceHandler(time, price, amount);
-                            //TODO: Save to portable DB. Each exchange|quote pair should go to another table.
-                            //TODO: Implement tool to join DB files together or create DB with new data only.
                         }
                         catch
                         {
@@ -91,7 +93,7 @@ namespace UnifiedStockExchange.Controllers
             {
                 if (priceHandler != null)
                 {
-                    _priceService.RegisterListener(exchange, quote, priceHandler);
+                    _priceService.RegisterListener(exchangeName, tradingPair, priceHandler);
                 }
             }
         }

@@ -89,14 +89,7 @@ namespace UnifiedStockExchange.DataAccess
 
             IDbCommand sqlCmd = _connection.CreateCommand();
             _dialectProvider.PrepareParameterizedInsertStatement<T>(sqlCmd, tableName: _tableName);
-
-            PropertyInfo[] allProps = typeof(T).GetProperties();
-            IEnumerable<PropertyInfo> publicPropsWithGetter = allProps
-                .Where(it => it.CanRead && it.GetGetMethod(false) != null);
-            foreach (PropertyInfo prop in publicPropsWithGetter)
-            {
-                ((IDbDataParameter)sqlCmd.Parameters["@" + prop.Name]).Value = prop.GetValue(entity);
-            }
+            _dialectProvider.SetParameterValues<T>(sqlCmd, entity);
 
             sqlCmd.ExecuteNonQuery();
         }
