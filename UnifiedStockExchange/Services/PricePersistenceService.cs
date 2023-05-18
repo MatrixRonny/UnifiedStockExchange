@@ -7,6 +7,7 @@ using UnifiedStockExchange.DataAccess;
 using UnifiedStockExchange.Domain.Entities;
 using UnifiedStockExchange.Domain.Enums;
 using UnifiedStockExchange.Utility;
+using static UnifiedStockExchange.Domain.Constants.StockConstants;
 
 namespace UnifiedStockExchange.Services
 {
@@ -60,13 +61,11 @@ namespace UnifiedStockExchange.Services
                 {
                     // Create missing exchangeQuote cache and data access.
 
-                    lastWrite = new DateTime();
-
                     _lastWrite[exchangeQuote] = DateTime.UtcNow;
                     _priceData[exchangeQuote] = new PriceCandle
                     {
                         Date = TruncateDateToMinute(dateTimeNow),
-                        Interval = SampleInterval.OneMinute,
+                        Interval = PersistenceInterval,
                         Open = price,
                         High = price,
                         Low = price,
@@ -87,7 +86,7 @@ namespace UnifiedStockExchange.Services
             PriceCandle priceCandle = _priceData[exchangeQuote];
             lock (priceCandle)
             {
-                if ((time.Date - lastWrite).Minutes < 1)
+                if ((time - priceCandle.Date).Minutes < (int)PersistenceInterval)
                 {
                     // Update existing PriceCandle with current price information.
 
@@ -145,6 +144,13 @@ namespace UnifiedStockExchange.Services
                 _tableAccess.Remove(exchangeQuote);
             }
 
+        }
+
+        public SelectFilter<PriceCandle> SelectPriceData(string exchangeName, ValueTuple<string, string> tradingPair)
+        {
+            string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
+            TableDataAccess<PriceCandle> priceData = new TableDataAccess<PriceCandle>(_connectionFactory, "PriceData_" + exchangeQuote);
+            return priceData.CreateSelectFilter();
         }
 
         private static DateTime TruncateDateToMinute(DateTime dateTimeNow)
