@@ -10,9 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="UnifiedStockExchangeSdk\**" />
-    <EmbeddedResource Remove="UnifiedStockExchangeSdk\**" />
-    <None Remove="UnifiedStockExchangeSdk\**" />
+    <Compile Remove="UnifiedStockExchange.Sdk\**" />
+    <EmbeddedResource Remove="UnifiedStockExchange.Sdk\**" />
+    <None Remove="UnifiedStockExchange.Sdk\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\UnifiedStockExchange.CSharp\UnifiedStockExchange.CSharp.csproj" />
-    <ProjectReference Include="..\UnifiedStockExchangeSdk.CSharp\src\UnifiedStockExchangeSdk.CSharp\UnifiedStockExchangeSdk.CSharp.csproj" />
+    <ProjectReference Include="..\UnifiedStockExchange.Sdk.CSharp\src\UnifiedStockExchange.Sdk.CSharp\UnifiedStockExchange.Sdk.CSharp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
