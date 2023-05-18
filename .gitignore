@@ -364,4 +364,4 @@ FodyWeavers.xsd
 
 # Custom Ignore
 App_Data
-/UnifiedStockExchange.Sdk.CSharp
+/UnifiedStockExchange.Sdk.*
