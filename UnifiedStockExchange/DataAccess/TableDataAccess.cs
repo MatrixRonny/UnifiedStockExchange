@@ -1,6 +1,7 @@
 ﻿using ServiceStack.OrmLite;
 using System.Data;
 using System.Reflection;
+using UnifiedStockExchange.Exceptions;
 
 namespace UnifiedStockExchange.DataAccess
 {
@@ -50,10 +51,26 @@ namespace UnifiedStockExchange.DataAccess
             _connection.DropTable<T>(_tableName);
         }
 
+        public bool TableExists()
+        {
+            lock (_connection)
+            {
+                if (_connection.State == ConnectionState.Closed)
+                {
+                    _connection.Open();
+                }
+            }
+
+            return _connection.TableExists(_tableName);
+        }
+
         public SelectFilter<T> CreateSelectFilter()
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(nameof(TableDataAccess<T>));
+
+            if (!TableExists())
+                throw new DataAccessException("Could not find table with name " + _tableName);
 
             return new SelectFilter<T>(_connection, _tableName);
         }
@@ -63,6 +80,9 @@ namespace UnifiedStockExchange.DataAccess
             if (_isDisposed)
                 throw new ObjectDisposedException(nameof(TableDataAccess<T>));
 
+            if (!TableExists())
+                throw new DataAccessException("Could not find table with name " + _tableName);
+
             return new DeleteFilter<T>(_connection, _tableName);
         }
 
@@ -70,6 +90,9 @@ namespace UnifiedStockExchange.DataAccess
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(nameof(TableDataAccess<T>));
+
+            if (!TableExists())
+                throw new DataAccessException("Could not find table with name " + _tableName);
 
             return new UpdateFilter<T>(_connection, _tableName);
         }
@@ -79,13 +102,8 @@ namespace UnifiedStockExchange.DataAccess
             if (_isDisposed)
                 throw new ObjectDisposedException(nameof(TableDataAccess<T>));
 
-            lock (_connection)
-            {
-                if (_connection.State == ConnectionState.Closed)
-                {
-                    _connection.Open();
-                }
-            }
+            if (!TableExists())
+                throw new DataAccessException("Could not find table with name " + _tableName);
 
             IDbCommand sqlCmd = _connection.CreateCommand();
             _dialectProvider.PrepareParameterizedInsertStatement<T>(sqlCmd, tableName: _tableName);

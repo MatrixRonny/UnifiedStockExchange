@@ -14,7 +14,7 @@
 
         public static ValueTuple<string, string> ToTradingPair(this string quote)
         {
-            string[] split = quote.Split('-');
+            string[] split = quote.ToUpper().Split('-');
             return (split[1], split[0]);
         }
     }

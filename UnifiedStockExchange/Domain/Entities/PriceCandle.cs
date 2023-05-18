@@ -11,5 +11,10 @@ namespace UnifiedStockExchange.Domain.Entities
         public decimal Low { get; set; }
         public decimal Close { get; set; }
         public decimal Volume { get; set; }
+
+        public PriceCandle Clone()
+        {
+            return (PriceCandle)MemberwiseClone();
+        }
     }
 }
