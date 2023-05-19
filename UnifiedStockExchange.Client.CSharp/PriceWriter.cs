@@ -14,14 +14,12 @@ namespace UnifiedStockExchange.CSharp
     {
         private readonly string _unfiedStockExchangeUrl;
         private readonly string _exchangeName;
-        private readonly (string, string) _tradingPair;
         private ClientWebSocket _webSocket;
 
-        public PriceWriter(string unfiedStockExchangeUrl, string exchangeName, ValueTuple<string, string> tradingPair)
+        public PriceWriter(string unfiedStockExchangeUrl, string exchangeName)
         {
             _unfiedStockExchangeUrl = unfiedStockExchangeUrl;
             _exchangeName = exchangeName;
-            _tradingPair = tradingPair;
         }
 
         public async Task ConnectAsync()
@@ -35,7 +33,7 @@ namespace UnifiedStockExchange.CSharp
             try
             {
                 UriBuilder uriBuilder = new UriBuilder(_unfiedStockExchangeUrl);
-                uriBuilder.Path = $"PriceIngest/{_exchangeName}/{_tradingPair.Item1}/{_tradingPair.Item2}/ws";
+                uriBuilder.Path = $"PriceIngest/{_exchangeName}/ws";
 
                 CancellationTokenSource tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
                 await webSocket.ConnectAsync(uriBuilder.Uri, tokenSource.Token);
@@ -68,13 +66,14 @@ namespace UnifiedStockExchange.CSharp
         /// <param name="price">The settlement price of the transaction.</param>
         /// <param name="amount">The amount of currency that has been traded</param>
         /// <returns></returns>
-        public async Task SendPriceUpdateAsync(DateTime time, decimal price, decimal amount)
+        public async Task SendPriceUpdateAsync(ValueTuple<string, string> tradingPair, DateTime time, decimal price, decimal amount)
         {
             string jsonData = JsonSerializer.Serialize(new PriceUpdateData
             {
                 Time = new DateTimeOffset(time).ToUnixTimeMilliseconds(),
                 Price = price,
-                Amount = amount
+                Amount = amount,
+                TradingPair = $"{tradingPair.Item2}-{tradingPair.Item1}"
             });
 
             ArraySegment<byte> bytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonData));

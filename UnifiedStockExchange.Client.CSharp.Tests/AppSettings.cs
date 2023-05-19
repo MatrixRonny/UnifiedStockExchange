@@ -10,6 +10,6 @@ namespace UnifiedStockExchange.CSharp.Tests
     {
         public string UnifiedStockExchangeUrl { get; set; } = null!;
         public string ExchangeName { get; set; } = null!;
-        public string Quote { get; set; } = null!;
+        public string PairName { get; set; } = null!;
     }
 }

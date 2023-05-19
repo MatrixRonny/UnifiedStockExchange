@@ -7,7 +7,7 @@ namespace UnifiedStockExchange.Services
 {
     public class PriceExchangeService
     {
-        // [exchangeName][index] = tradingPair
+        // [exchangeName][index] = pairName
         Dictionary<string, List<string>> _priceQuotes = new Dictionary<string, List<string>>();
 
         // [exchangeQuote] = PriceUpdateHandler
@@ -25,8 +25,7 @@ namespace UnifiedStockExchange.Services
             lock (_priceHandlers)
             lock (_priceListeners)
             {
-                string quote = tradingPair.ToQuote();
-                if (_priceQuotes.ContainsKey(exchangeName) && _priceQuotes[exchangeName].Contains(quote))
+                if (_priceQuotes.ContainsKey(exchangeName) && _priceQuotes[exchangeName].Contains(tradingPair.ToName()))
                     throw new ApplicationException("A listener has already been registered for that exchange and quote.");
 
                 string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
@@ -58,7 +57,7 @@ namespace UnifiedStockExchange.Services
                         {
                             _priceQuotes[exchangeName] = new();
                         }
-                        _priceQuotes[exchangeName].Add(quote);
+                        _priceQuotes[exchangeName].Add(tradingPair.ToName());
                         _priceHandlers[exchangeQuote] = del;
                         _priceListeners[del] = new List<PriceUpdateHandler>();
 
@@ -77,21 +76,19 @@ namespace UnifiedStockExchange.Services
             lock (_priceHandlers)
             lock (_priceListeners)
             {
-                string quote = tradingPair.ToQuote();
                 string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
              
                 PriceUpdateHandler del = _priceHandlers[exchangeQuote];
                 _priceListeners.Remove(del);
                 _priceHandlers.Remove(exchangeQuote);
 
-                _priceQuotes[exchangeName].Remove(quote);
+                _priceQuotes[exchangeName].Remove(tradingPair.ToName());
                 if (_priceQuotes[exchangeName].Count == 0)
                 {
                     _priceQuotes.Remove(exchangeName);
                 }
             }
         }
-
         public void RegisterListener(string exchangeName, ValueTuple<string, string> tradingPair, PriceUpdateHandler listener)
         {
             lock (_priceHandlers)

@@ -12,33 +12,30 @@ using UnifiedStockExchange.CSharp;
 
 public class CoinMarketCapForwarder
 {
-    private readonly ClientWebSocket _webSocket;
-    private readonly Dictionary<int, PriceWriter> _priceWriters;
+    private ClientWebSocket _webSocket;
+    private PriceWriter _priceWriter;
+    private readonly string _exchangeName;
     private readonly IList<int> _currencyIds;
     private readonly Uri _coinMarketCapWs;
+    private readonly Uri _unifiedExchangeWs;
 
     public CoinMarketCapForwarder(string exchangeName, IList<int> currencyIds, Uri coinMarketCapWs, Uri unifiedExchangeWs)
     {
+        _exchangeName = exchangeName;
         _currencyIds = currencyIds;
         _coinMarketCapWs = coinMarketCapWs;
-
-        _webSocket = new ClientWebSocket();
-        _webSocket.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0");
-
-        _priceWriters = _currencyIds.Select(it => Program.CryptoCurrencies[it])
-            .ToDictionary(
-                it => it.Id,
-                it => new PriceWriter(unifiedExchangeWs.AbsoluteUri, exchangeName, ("USD", it.Symbol))
-            );
+        _unifiedExchangeWs = unifiedExchangeWs;
     }
 
     public async Task ConnectAndProcessDataAsync()
     {
+        _webSocket = new ClientWebSocket();
+        _webSocket.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0");
+
+        _priceWriter = new PriceWriter(_unifiedExchangeWs.AbsoluteUri, _exchangeName);
+
         await _webSocket.ConnectAsync(_coinMarketCapWs, CancellationToken.None);
-        foreach (PriceWriter priceWriter in _priceWriters.Values)
-        {
-            await priceWriter.ConnectAsync();
-        }
+        await _priceWriter.ConnectAsync();
 
         throw new Exception("Oops!");
         await ProcessDataAsync();
@@ -48,6 +45,10 @@ public class CoinMarketCapForwarder
 
     public async Task ReconnectAndProcessDataAsync()
     {
+        _webSocket?.Dispose();
+        _webSocket = new ClientWebSocket();
+        _webSocket.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0");
+
         await _webSocket.ConnectAsync(_coinMarketCapWs, CancellationToken.None);
 
         await ProcessDataAsync();
@@ -137,6 +138,8 @@ public class CoinMarketCapForwarder
         double amount = currentVolume - lastVolume;
         amount = amount < 0 ? 0 : amount;
 
-        await _priceWriters[currencyId].SendPriceUpdateAsync(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(unixTimeMillis), (decimal)price, (decimal)amount);
+        ValueTuple<string, string> tradingPair = ("USD", Program.CryptoCurrencies[currencyId].Symbol);
+        DateTime time = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(unixTimeMillis);
+        await _priceWriter.SendPriceUpdateAsync(tradingPair, time, (decimal)price, (decimal)amount);
     }
 }

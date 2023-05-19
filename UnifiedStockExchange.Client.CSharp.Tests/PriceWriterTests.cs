@@ -17,8 +17,7 @@ namespace UnifiedStockExchange.CSharp.Tests
             AppSettings appSettings = TestUtility.GetAppSettings();
             PriceWriter priceWriter = new PriceWriter(
                 appSettings.UnifiedStockExchangeUrl, 
-                appSettings.ExchangeName, 
-                appSettings.Quote.ToTradingPair()
+                appSettings.ExchangeName
             );
             PriceHistoryApi historyApi = new PriceHistoryApi(appSettings.UnifiedStockExchangeUrl);
             DateTime dateTimeNow = DateTime.UtcNow;
@@ -27,13 +26,13 @@ namespace UnifiedStockExchange.CSharp.Tests
 
             ///// Act /////
             await priceWriter.ConnectAsync();
-            await priceWriter.SendPriceUpdateAsync(dateTimeNow, price, amount);
+            await priceWriter.SendPriceUpdateAsync(appSettings.PairName.ToTradingPair(), dateTimeNow, price, amount);
             priceWriter.Dispose();
 
             List<PriceCandle> priceHistory = historyApi.PriceHistoryGetHistoryDataFromPost(new PriceHistoryRequest
             {
                 ExchangeName = appSettings.ExchangeName,
-                TradingPair = appSettings.Quote,
+                TradingPair = appSettings.PairName,
                 FromDate = dateTimeNow,
                 CandleSamples = 1,
                 CandleInterval = SampleInterval.OneMinute
@@ -56,8 +55,7 @@ namespace UnifiedStockExchange.CSharp.Tests
             AppSettings appSettings = TestUtility.GetAppSettings();
             PriceWriter priceWriter = new PriceWriter(
                 appSettings.UnifiedStockExchangeUrl,
-                appSettings.ExchangeName,
-                appSettings.Quote.ToTradingPair()
+                appSettings.ExchangeName
             );
             PriceHistoryApi historyApi = new PriceHistoryApi(appSettings.UnifiedStockExchangeUrl);
             DateTime dateTimeNow = DateTime.UtcNow;
@@ -66,13 +64,13 @@ namespace UnifiedStockExchange.CSharp.Tests
 
             ///// Act /////
             await priceWriter.ConnectAsync();
-            await priceWriter.SendPriceUpdateAsync(dateTimeNow, price, amount);
+            await priceWriter.SendPriceUpdateAsync(appSettings.PairName.ToTradingPair(), dateTimeNow, price, amount);
 
             await Task.Delay(TimeSpan.FromSeconds(10 * 60 + 1));
             List<PriceCandle> priceHistory = historyApi.PriceHistoryGetHistoryDataFromPost(new PriceHistoryRequest
             {
                 ExchangeName = appSettings.ExchangeName,
-                TradingPair = appSettings.Quote,
+                TradingPair = appSettings.PairName,
                 FromDate = dateTimeNow,
                 CandleSamples = 1,
                 CandleInterval = SampleInterval.OneMinute
