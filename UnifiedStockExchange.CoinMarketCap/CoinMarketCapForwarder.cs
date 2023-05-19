@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnifiedStockExchange.CSharp;
 
-public class CoinMarketCapForwarder
+public class CoinMarketCapForwarder : IDisposable
 {
     private ClientWebSocket _webSocket;
     private PriceWriter _priceWriter;
@@ -37,7 +37,6 @@ public class CoinMarketCapForwarder
         await _webSocket.ConnectAsync(_coinMarketCapWs, CancellationToken.None);
         await _priceWriter.ConnectAsync();
 
-        throw new Exception("Oops!");
         await ProcessDataAsync();
 
         await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
@@ -141,5 +140,16 @@ public class CoinMarketCapForwarder
         ValueTuple<string, string> tradingPair = ("USD", Program.CryptoCurrencies[currencyId].Symbol);
         DateTime time = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(unixTimeMillis);
         await _priceWriter.SendPriceUpdateAsync(tradingPair, time, (decimal)price, (decimal)amount);
+    }
+
+    bool _isDisposed;
+    public void Dispose()
+    {
+        if (_isDisposed)
+            return;
+        _isDisposed = true;
+
+        _webSocket?.Dispose();
+        _priceWriter?.Dispose();
     }
 }

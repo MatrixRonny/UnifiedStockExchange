@@ -10,8 +10,6 @@ namespace UnifiedStockExchange.CSharp.Tests
         [TestMethod]
         public async Task ConnectSendPriceUpdateAndReadHistory()
         {
-            //WARNING: This test may fail if run twice withing the same minute.
-
             ///// Arrange /////
 
             AppSettings appSettings = TestUtility.GetAppSettings();

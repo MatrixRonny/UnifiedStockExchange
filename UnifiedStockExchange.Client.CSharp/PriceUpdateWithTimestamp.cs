@@ -1,6 +1,6 @@
 ﻿namespace UnifiedStockExchange.Client.CSharp
 {
-    public class PriceUpdateData
+    public class PriceUpdateWithTimestamp
     {
         public long Time { get; set; }
 

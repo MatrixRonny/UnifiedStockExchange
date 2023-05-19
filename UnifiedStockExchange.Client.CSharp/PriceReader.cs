@@ -17,7 +17,7 @@ namespace UnifiedStockExchange.Client.CSharp
         private ClientWebSocket _webSocket;
         private CancellationTokenSource _tokenSource;
 
-        public event Action<PriceUpdateData> PriceUpdateReceived;
+        public event Action<PriceUpdateWithDate> PriceUpdateReceived;
 
         public PriceReader(string unifiedStockExchangeUrl, string exchangeName, ValueTuple<string, string> tradingPair)
         {
@@ -70,12 +70,18 @@ namespace UnifiedStockExchange.Client.CSharp
             while (_webSocket.State == WebSocketState.Open)
             {
                 string json = await ReceiveMessageAsync();
-                PriceUpdateData priceUpdate = JsonSerializer.Deserialize<PriceUpdateData>(json);
+                PriceUpdateWithTimestamp priceUpdate = JsonSerializer.Deserialize<PriceUpdateWithTimestamp>(json);
 
                 if (priceUpdate == null)
                     throw new ApplicationException("Failed to deserialize price update data.");
 
-                PriceUpdateReceived?.Invoke(priceUpdate);
+                PriceUpdateReceived?.Invoke(new PriceUpdateWithDate
+                {
+                    TradingPair = priceUpdate.TradingPair,
+                    Time = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(priceUpdate.Time),
+                    Price = priceUpdate.Price,
+                    Amount = priceUpdate.Amount
+                });
             }
         }
 

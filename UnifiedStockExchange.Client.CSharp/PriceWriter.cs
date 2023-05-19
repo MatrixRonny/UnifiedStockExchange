@@ -68,7 +68,7 @@ namespace UnifiedStockExchange.CSharp
         /// <returns></returns>
         public async Task SendPriceUpdateAsync(ValueTuple<string, string> tradingPair, DateTime time, decimal price, decimal amount)
         {
-            string jsonData = JsonSerializer.Serialize(new PriceUpdateData
+            string jsonData = JsonSerializer.Serialize(new PriceUpdateWithTimestamp
             {
                 Time = new DateTimeOffset(time).ToUnixTimeMilliseconds(),
                 Price = price,
