@@ -37,7 +37,7 @@ namespace UnifiedStockExchange.CSharp
                 CancellationTokenSource tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
                 await webSocket.ConnectAsync(uriBuilder.Uri, tokenSource.Token);
             }
-            catch(TaskCanceledException)
+            catch (TaskCanceledException)
             {
                 throw new ApplicationException("Could not connect to UnifiedStockExchange PriceIngest WebSocket.");
             }
@@ -52,7 +52,7 @@ namespace UnifiedStockExchange.CSharp
                 _webSocket?.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection closed.", new CancellationTokenSource(2000).Token)
                     .ConfigureAwait(false).GetAwaiter().GetResult();
             }
-            catch(Exception)
+            catch (Exception)
             {
                 _webSocket?.Dispose();
             }
@@ -81,7 +81,7 @@ namespace UnifiedStockExchange.CSharp
         bool _isDisposed;
         public void Dispose()
         {
-            if(!_isDisposed)
+            if (!_isDisposed)
             {
                 _isDisposed = true;
                 _webSocket?.Dispose();

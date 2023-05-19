@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\UnifiedStockExchange.CSharp\UnifiedStockExchange.CSharp.csproj" />
+    <ProjectReference Include="..\UnifiedStockExchange.Client.CSharp\UnifiedStockExchange.Client.CSharp.csproj" />
     <ProjectReference Include="..\UnifiedStockExchange.Sdk.CSharp\src\UnifiedStockExchange.Sdk.CSharp\UnifiedStockExchange.Sdk.CSharp.csproj" />
   </ItemGroup>
 

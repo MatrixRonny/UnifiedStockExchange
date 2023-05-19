@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "UnifiedStockExchange.CoinMarketCap": {
+      "commandName": "Project",
+      "commandLineArgs": "ws://localhost:5097"
+    }
+  }
+}

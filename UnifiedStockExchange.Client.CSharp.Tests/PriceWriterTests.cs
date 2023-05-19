@@ -28,7 +28,7 @@ namespace UnifiedStockExchange.CSharp.Tests
             ///// Act /////
             await priceWriter.ConnectAsync();
             await priceWriter.SendPriceUpdate(dateTimeNow, price, amount);
-            await priceWriter.SendPriceUpdate(dateTimeNow.AddMinutes(1), price + 100, amount * 1.1M);
+            priceWriter.Dispose();
 
             List<PriceCandle> priceHistory = historyApi.PriceHistoryGetHistoryDataFromPost(
                 appSettings.ExchangeName,
@@ -66,7 +66,6 @@ namespace UnifiedStockExchange.CSharp.Tests
             ///// Act /////
             await priceWriter.ConnectAsync();
             await priceWriter.SendPriceUpdate(dateTimeNow, price, amount);
-            await priceWriter.SendPriceUpdate(dateTimeNow.AddMinutes(1), price + 100, amount * 1.1M);
 
             await Task.Delay(TimeSpan.FromSeconds(10 * 60 + 1));
             List<PriceCandle> priceHistory = historyApi.PriceHistoryGetHistoryDataFromPost(
