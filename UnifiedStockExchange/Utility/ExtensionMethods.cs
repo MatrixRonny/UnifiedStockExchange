@@ -2,7 +2,7 @@
 {
     public static class ExtensionMethods
     {
-        public static string ToQuote(this ValueTuple<string, string> tradingPair)
+        public static string ToName(this ValueTuple<string, string> tradingPair)
         {
             return $"{tradingPair.Item2}-{tradingPair.Item1}";
         }
@@ -16,6 +16,13 @@
         {
             string[] split = quote.ToUpper().Split('-');
             return (split[1], split[0]);
+        }
+
+        public static ValueTuple<string, ValueTuple<string, string>> ToExchangeAndTradingPair(this string exchangeQuote)
+        {
+            string[] split = exchangeQuote.Split('|');
+            var tradingPair = split[1].ToTradingPair();
+            return (split[0], tradingPair);
         }
     }
 }

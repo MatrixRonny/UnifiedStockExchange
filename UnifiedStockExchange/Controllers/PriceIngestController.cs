@@ -12,6 +12,7 @@ using System.Data;
 using System.Dynamic;
 using System.Diagnostics;
 using UnifiedStockExchange.Domain.DataTransfer;
+using UnifiedStockExchange.Utility;
 
 namespace UnifiedStockExchange.Controllers
 {
@@ -28,14 +29,16 @@ namespace UnifiedStockExchange.Controllers
             _persistenceService = persistenceService;
         }
 
-        [HttpGet("{exchangeName}/{fromCurrency}/{toCurrency}/ws")]
-        public async Task Get(string exchangeName, string fromCurrency, string toCurrency)
+        [HttpGet("{exchangeName}/ws")]
+        public async Task Get(string exchangeName)
         {
+            //TODO: Adjust this WebSocket to receive multiple currencies.
+
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
                 using (WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync())
                 {
-                    await RecordPriceUpdates(exchangeName, (fromCurrency, toCurrency), webSocket);
+                    await RecordPriceUpdates(exchangeName, webSocket);
                 }
             }
             else
@@ -44,9 +47,10 @@ namespace UnifiedStockExchange.Controllers
             }
         }
 
-        private async Task RecordPriceUpdates(string exchangeName, ValueTuple<string, string> tradingPair, WebSocket webSocket)
+        private async Task RecordPriceUpdates(string exchangeName, WebSocket webSocket)
         {
-            PriceUpdateHandler? priceHandler = _priceService.ListenForUpdates(exchangeName, tradingPair);
+            Dictionary<string, PriceUpdateHandler> priceHandlers = new Dictionary<string, PriceUpdateHandler>();
+
             try
             {
                 // https://stackoverflow.com/a/23784968/2109230
@@ -80,11 +84,26 @@ namespace UnifiedStockExchange.Controllers
                         try
                         {
                             DateTime time = new DateTime(1970, 1, 1, 0, 0, 0, 0).AddMilliseconds(priceUpdate.Time);
-                            decimal price = priceUpdate.Price;
-                            decimal amount = priceUpdate.Amount;
+                            _persistenceService.RecordPrice(
+                                exchangeName, 
+                                priceUpdate.TradingPair.ToTradingPair(), 
+                                time, 
+                                priceUpdate.Price, 
+                                priceUpdate.Amount
+                            );
 
-                            _persistenceService.RecordPrice(exchangeName, tradingPair, time, price, amount);
-                            priceHandler(time, price, amount);
+                            PriceUpdateHandler priceHandler;
+                            lock(priceHandlers)
+                            {
+                                var tradingPair = priceUpdate.TradingPair.ToTradingPair();
+                                string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
+                                if (!priceHandlers.TryGetValue(exchangeQuote, out priceHandler!))
+                                {
+                                    priceHandler = priceHandlers[exchangeQuote] = _priceService.ListenForUpdates(exchangeName, tradingPair);
+                                }
+                            }
+
+                            priceHandler(time, priceUpdate.Price, priceUpdate.Amount);
                         }
                         catch
                         {
@@ -97,8 +116,13 @@ namespace UnifiedStockExchange.Controllers
             }
             finally
             {
-                _priceService.CancelListen(exchangeName, tradingPair);
-                _persistenceService.FlushAndRemoveFromCache(exchangeName, tradingPair);
+                foreach (string exchangeQuote in priceHandlers.Keys)
+                {
+                    var (_, tradingPair) = exchangeQuote.ToExchangeAndTradingPair();
+
+                    _priceService.CancelListen(exchangeName, tradingPair);
+                    _persistenceService.FlushAndRemoveFromCache(exchangeName, tradingPair);
+                }
             }
         }
     }

@@ -14,6 +14,7 @@ internal class Program
         if(args.Length < 1)
         {
             Console.WriteLine("Usage: CoinMarketCap <UnifiedStockExchangeUrl>");
+            return;
         }
 
         string priceInfoJson = File.ReadAllText("CoinMarketCap.json");
