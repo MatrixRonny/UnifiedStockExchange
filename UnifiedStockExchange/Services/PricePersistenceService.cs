@@ -93,13 +93,12 @@ namespace UnifiedStockExchange.Services
                     if (priceCandle.Low > price) priceCandle.Low = price;
                     if (priceCandle.High < price) priceCandle.High = price;
 
+                    priceCandle.Close = price;
                     priceCandle.Volume += amount;
                 }
                 else
                 {
                     // Store existing PriceCandle and create new one.
-
-                    priceCandle.Close = price;
 
                     TableDataAccess<PriceCandle> dataAccess = _tableAccess[exchangeQuote];
                     lock (dataAccess)
@@ -127,9 +126,6 @@ namespace UnifiedStockExchange.Services
             PriceCandle priceCandle = _priceData[exchangeQuote];
             lock (priceCandle)
             {
-                //INFO: This is not correct, but saves performance.
-                priceCandle.Close = priceCandle.Open;
-
                 TableDataAccess<PriceCandle> dataAccess = _tableAccess[exchangeQuote];
                 lock (dataAccess)
                 {
