@@ -5,6 +5,8 @@ VisualStudioVersion = 17.5.33424.131
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnifiedStockExchange", "UnifiedStockExchange\UnifiedStockExchange.csproj", "{76CBBF71-2EC2-46BD-A3F6-1469193243B2}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite", "ServiceStack.OrmLite\src\ServiceStack.OrmLite\ServiceStack.OrmLite.csproj", "{C153108B-B73E-45FE-B546-8D086CFCC25A}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceStack.OrmLite.Sqlite", "ServiceStack.OrmLite\src\ServiceStack.OrmLite.Sqlite\ServiceStack.OrmLite.Sqlite.csproj", "{D1EC1489-D978-4582-810C-A1CC9CE7BECD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnifiedStockExchange.Client.CSharp", "UnifiedStockExchange.Client.CSharp\UnifiedStockExchange.Client.CSharp.csproj", "{4212D988-2DE1-497F-BC5C-2A917C00DC09}"
@@ -13,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnifiedStockExchange.Client
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnifiedStockExchange.Sdk.CSharp", "UnifiedStockExchange.Sdk.CSharp\src\UnifiedStockExchange.Sdk.CSharp\UnifiedStockExchange.Sdk.CSharp.csproj", "{A8DA2C49-AED8-46AB-BED7-87F6385BED50}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnifiedStockExchange.CoinMarketCap", "UnifiedStockExchange.CoinMarketCap\UnifiedStockExchange.CoinMarketCap.csproj", "{13F210DA-2CD6-4D0E-A157-A034E930B8DB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnifiedStockExchange.CoinMarketCap", "UnifiedStockExchange.CoinMarketCap\UnifiedStockExchange.CoinMarketCap.csproj", "{13F210DA-2CD6-4D0E-A157-A034E930B8DB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{13F210DA-2CD6-4D0E-A157-A034E930B8DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{13F210DA-2CD6-4D0E-A157-A034E930B8DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{13F210DA-2CD6-4D0E-A157-A034E930B8DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C153108B-B73E-45FE-B546-8D086CFCC25A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C153108B-B73E-45FE-B546-8D086CFCC25A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C153108B-B73E-45FE-B546-8D086CFCC25A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C153108B-B73E-45FE-B546-8D086CFCC25A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
