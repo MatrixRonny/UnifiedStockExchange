@@ -65,7 +65,7 @@ namespace UnifiedStockExchange.CSharp
         /// <param name="price">The settlement price of the transaction.</param>
         /// <param name="amount">The amount of currency that has been traded</param>
         /// <returns></returns>
-        public async Task SendPriceUpdate(DateTime time, decimal price, decimal amount)
+        public async Task SendPriceUpdateAsync(DateTime time, decimal price, decimal amount)
         {
             string jsonData = JsonSerializer.Serialize(new
             {
