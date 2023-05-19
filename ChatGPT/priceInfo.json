@@ -1,0 +1,80 @@
+{
+	"trendingList": [
+		{
+			"id": 5994,
+			"dataType": 2,
+			"name": "Shiba Inu",
+			"symbol": "SHIB",
+			"slug": "shiba-inu",
+			"rank": 13,
+			"status": "active",
+			"marketCap": 5626399703.38,
+			"selfReportedMarketCap": 0,
+			"priceChange": {
+				"price": 0.000010247270068567333,
+				"priceChange24h": -2.29312285,
+				"priceChange7d": -9.33153128,
+				"priceChange30d": -24.79541776,
+				"volume24h": 480473743.33423629,
+				"lastUpdate": "2023-03-10T20:21:00.000Z"
+			}
+		},
+		{
+			"id": 7186,
+			"dataType": 2,
+			"name": "PancakeSwap",
+			"symbol": "CAKE",
+			"slug": "pancakeswap",
+			"rank": 66,
+			"status": "active",
+			"marketCap": 639916044.19,
+			"selfReportedMarketCap": 0,
+			"priceChange": {
+				"price": 3.5511435492632814,
+				"priceChange24h": -1.45946292,
+				"priceChange7d": -5.41680023,
+				"priceChange30d": -23.20770765,
+				"volume24h": 45795045.91739025,
+				"lastUpdate": "2023-03-10T20:21:00.000Z"
+			}
+		},
+		{
+			"id": 23063,
+			"dataType": 2,
+			"name": "SHIKOKU",
+			"symbol": "SHIK",
+			"slug": "shikoku",
+			"rank": 2714,
+			"status": "active",
+			"marketCap": 0,
+			"selfReportedMarketCap": 7329470.703392521,
+			"priceChange": {
+				"price": 7.329470703392521e-9,
+				"priceChange24h": -6.81117399,
+				"priceChange7d": -48.92022921,
+				"priceChange30d": 20.45053803,
+				"volume24h": 2234694.96062324,
+				"lastUpdate": "2023-03-10T20:21:00.000Z"
+			}
+		},
+		{
+			"id": 1,
+			"dataType": 2,
+			"name": "Bitcoin",
+			"symbol": "BTC",
+			"slug": "bitcoin",
+			"rank": 1,
+			"status": "active",
+			"marketCap": 386551524387.64,
+			"selfReportedMarketCap": 0,
+			"priceChange": {
+				"price": 20014.447023157933,
+				"priceChange24h": -3.51584663,
+				"priceChange7d": -10.52821471,
+				"priceChange30d": -12.32706542,
+				"volume24h": 42647646513.386089,
+				"lastUpdate": "2023-03-10T20:21:00.000Z"
+			}
+		}
+	]
+}

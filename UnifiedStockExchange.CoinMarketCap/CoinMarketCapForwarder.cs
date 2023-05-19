@@ -121,6 +121,6 @@ public class CoinMarketCapForwarder
         double amount = currentVolume - lastVolume;
         amount = amount < 0 ? 0 : amount;
 
-        await _priceWriters[currencyId].SendPriceUpdate(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(unixTimeMillis), (decimal)price, (decimal)amount);
+        await _priceWriters[currencyId].SendPriceUpdateAsync(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(unixTimeMillis), (decimal)price, (decimal)amount);
     }
 }

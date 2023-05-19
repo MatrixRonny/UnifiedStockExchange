@@ -1,0 +1,26 @@
+{
+	"d": {
+		"id": 1,
+		"p": 26633.33565790038,
+		"p24h": -1.894317253926,
+		"p7d": -1.199543507769,
+		"p30d": -11.792773841475,
+		"p3m": 7.737925211089,
+		"p1y": -9.451659062662,
+		"pytd": 60.946781676161,
+		"pall": 43072689.327664088,
+		"as": 19377156.0,
+		"mc": 516078299843.5,
+		"fmc24hpc": -1.894317253926
+	},
+	"t": "1684436847032",
+	"c": "main-site@crypto_price_5s@1@normal"
+}
+
+The previous three JSON variables contain transaction data with price in US Dollar.
+`priceUpdate == JSON.parse(priceEvents._webSocketMessages[2].data)`
+`priceUpdate.d.id == 1 == princeInfo.trendingList[3].id` means that the price refers to Bitcoin ($.name)
+`priceUpdate.d.p` represents the transaction price ($26633.33565790038)
+`priceUpdate.t` represents the Unix timestamp with millis for the transaction (May 18, 2023 7:07:27.032 PM)
+`priceUpdate.mc` represents the total amount traded since recorded.
+The amount traded is calculated as 'princeInfo.trendingList[i].mc - princeInfo.trendingList[i-1].mc`. If negative, consider 0.

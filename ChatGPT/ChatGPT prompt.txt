@@ -1,0 +1,274 @@
+Consider the following JavaScript variables hold JSON data: priceInfo, priceEvents and priceUpdate. I need to write an application around similar data. Tell me if you understand or find anything unclear about the data.
+
+var priceInfo = {
+	"trendingList": [
+		{
+			"id": 5994,
+			"dataType": 2,
+			"name": "Shiba Inu",
+			"symbol": "SHIB",
+			"slug": "shiba-inu",
+			"rank": 13,
+			"status": "active",
+			"marketCap": 5626399703.38,
+			"selfReportedMarketCap": 0,
+			"priceChange": {
+				"price": 0.000010247270068567333,
+				"priceChange24h": -2.29312285,
+				"priceChange7d": -9.33153128,
+				"priceChange30d": -24.79541776,
+				"volume24h": 480473743.33423629,
+				"lastUpdate": "2023-03-10T20:21:00.000Z"
+			}
+		},
+		{
+			"id": 7186,
+			"dataType": 2,
+			"name": "PancakeSwap",
+			"symbol": "CAKE",
+			"slug": "pancakeswap",
+			"rank": 66,
+			"status": "active",
+			"marketCap": 639916044.19,
+			"selfReportedMarketCap": 0,
+			"priceChange": {
+				"price": 3.5511435492632814,
+				"priceChange24h": -1.45946292,
+				"priceChange7d": -5.41680023,
+				"priceChange30d": -23.20770765,
+				"volume24h": 45795045.91739025,
+				"lastUpdate": "2023-03-10T20:21:00.000Z"
+			}
+		},
+		{
+			"id": 23063,
+			"dataType": 2,
+			"name": "SHIKOKU",
+			"symbol": "SHIK",
+			"slug": "shikoku",
+			"rank": 2714,
+			"status": "active",
+			"marketCap": 0,
+			"selfReportedMarketCap": 7329470.703392521,
+			"priceChange": {
+				"price": 7.329470703392521e-9,
+				"priceChange24h": -6.81117399,
+				"priceChange7d": -48.92022921,
+				"priceChange30d": 20.45053803,
+				"volume24h": 2234694.96062324,
+				"lastUpdate": "2023-03-10T20:21:00.000Z"
+			}
+		},
+		{
+			"id": 1,
+			"dataType": 2,
+			"name": "Bitcoin",
+			"symbol": "BTC",
+			"slug": "bitcoin",
+			"rank": 1,
+			"status": "active",
+			"marketCap": 386551524387.64,
+			"selfReportedMarketCap": 0,
+			"priceChange": {
+				"price": 20014.447023157933,
+				"priceChange24h": -3.51584663,
+				"priceChange7d": -10.52821471,
+				"priceChange30d": -12.32706542,
+				"volume24h": 42647646513.386089,
+				"lastUpdate": "2023-03-10T20:21:00.000Z"
+			}
+		}
+	]
+}
+
+var priceEvents = {
+	"_webSocketMessages": [
+		{
+			"type": "send",
+			"time": 1684436842.951789,
+			"opcode": 1,
+			"data": {
+				"method": "RSUBSCRIPTION",
+				"params": [
+					"main-site@crypto_price_5s@{}@normal",
+					"1,1027,825,1839,3408,52,2010,74,5426,3890,2,1958,6636,4687,5994,4943,5805,3717,3957,1975,7083,3794,328,3897,1321,512,11419,8916,1831,2563,2280,8000,21794,4642,3635,6535,11841,3077,3155,18876,4030,6719,3330,3513,1765,6210,2943,6892,7278,1966,11221,2416,4847,2011,5690,7334,6783,4558,19891,4066,2087,10603,1376,6538,3602,2586,1518,20947,24478,11840,3306,16086,4256,1437,4705,11857,4172,5899,8646,6953,7226,4846,1720,10791,131,4269,2502,5964,7950,2634,1934,7501,2694,4157,2469,7186,8536,9903,2130,11156,1,1027,2010,1839,6636,52,1975,2,512,1831,7083,74,9023,9022,5824,6783,11841,11840"
+				]
+			}
+		},
+		{
+			"type": "receive",
+			"time": 1684436843.203084,
+			"opcode": 1,
+			"data": {
+				"id": 0,
+				"code": 0,
+				"msg": "main-site@crypto_price_5s@{}@normal,4558,9903,4705,20947,5964,19891,7950,8536,1720,74,3330,2563,2280,4687,11221,10603,1027,21794,7226,3717,11857,2469,5426,2943,16086,4172,7501,1765,9022,5994,1437,1958,6538,3513,1,4269,4846,2010,11156,3306,131,2087,5899,3155,6535,3408,6636,3890,2634,328,8916,7186,9023,4642,18876,4943,512,4157,2586,1831,3635,4256,2416,1966,7334,2130,24478,8646,7278,6719,11841,1518,11840,4066,3957,1839,2502,3897,4030,10791,3602,1975,825,1376,4847,2,2011,11419,5805,3794,1321,6953,8000,52,5824,1934,3077"
+			}
+		},
+		{
+			"type": "receive",
+			"time": 1684436846.3099359,
+			"opcode": 1,
+			"data": {
+				"d": {
+					"id": 1,
+					"p": 26633.33565790038,
+					"p24h": -1.894317253926,
+					"p7d": -1.199543507769,
+					"p30d": -11.792773841475,
+					"p3m": 7.737925211089,
+					"p1y": -9.451659062662,
+					"pytd": 60.946781676161,
+					"pall": 43072689.327664088,
+					"as": 19377156.0,
+					"mc": 516078299843.5,
+					"fmc24hpc": -1.894317253926
+				},
+				"t": "1684436847032",
+				"c": "main-site@crypto_price_5s@1@normal"
+			}
+		},
+		{
+			"type": "receive",
+			"time": 1684436846.38265,
+			"opcode": 1,
+			"data": {
+				"d": {
+					"id": 1765,
+					"p": 0.8808933643320891,
+					"p24h": -2.485699162797,
+					"p7d": 0.682245197788,
+					"p30d": -27.26852664022,
+					"p3m": -28.939477256768,
+					"p1y": -32.304636596127,
+					"pytd": 2.15525529563,
+					"pall": -14.587491830232,
+					"as": 1091403953.6,
+					"mc": 961410500.53,
+					"fmc24hpc": -2.485699162797
+				},
+				"t": "1684436847058",
+				"c": "main-site@crypto_price_5s@1765@normal"
+			}
+		},
+		{
+			"type": "receive",
+			"time": 1684436846.38288,
+			"opcode": 1,
+			"data": {
+				"d": {
+					"id": 5994,
+					"p": 0.000008556977431231348,
+					"p24h": -2.28953105526,
+					"p7d": -0.754967392249,
+					"p30d": -25.5616675876,
+					"p3m": -35.217714003089,
+					"p1y": -28.454923055268,
+					"pytd": 5.815552293016,
+					"pall": 641039.924409602,
+					"as": 589534333568906.3,
+					"mc": 5044631987.29,
+					"fmc24hpc": -2.28953105526
+				},
+				"t": "1684436847061",
+				"c": "main-site@crypto_price_5s@5994@normal"
+			}
+		},
+		{
+			"type": "receive",
+			"time": 1684436846.383687,
+			"opcode": 1,
+			"data": {
+				"d": {
+					"id": 5824,
+					"p": 0.0022310671118544757,
+					"p24h": -2.841282389444,
+					"p7d": 5.0485990223610008,
+					"p30d": -24.888819639195,
+					"p3m": -30.345622851451,
+					"p1y": -58.127150602141,
+					"pytd": 8.146147141079,
+					"pall": -98.882229480593,
+					"as": 42074460452.0,
+					"mc": 93870944.96,
+					"fmc24hpc": -2.841282389444
+				},
+				"t": "1684436847061",
+				"c": "main-site@crypto_price_5s@5824@normal"
+			}
+		},
+		{
+			"type": "receive",
+			"time": 1684436846.383873,
+			"opcode": 1,
+			"data": {
+				"d": {
+					"id": 2,
+					"p": 90.03624703586047,
+					"p24h": -4.584235492215,
+					"p7d": 13.253277265212,
+					"p30d": -10.623404133786,
+					"p3m": -10.007929757364,
+					"p1y": 32.182017901724,
+					"pytd": 28.618024049806,
+					"pall": 1993.949013709265,
+					"as": 72949126.81,
+					"mc": 6568065602.45,
+					"fmc24hpc": -4.584235492215
+				},
+				"t": "1684436847063",
+				"c": "main-site@crypto_price_5s@2@normal"
+			}
+		}
+	]
+}
+
+var priceUpdate = {
+	"d": {
+		"id": 1,
+		"p": 26633.33565790038,
+		"p24h": -1.894317253926,
+		"p7d": -1.199543507769,
+		"p30d": -11.792773841475,
+		"p3m": 7.737925211089,
+		"p1y": -9.451659062662,
+		"pytd": 60.946781676161,
+		"pall": 43072689.327664088,
+		"as": 19377156.0,
+		"mc": 516078299843.5,
+		"fmc24hpc": -1.894317253926
+	},
+	"t": "1684436847032",
+	"c": "main-site@crypto_price_5s@1@normal"
+}
+
+-----
+
+The previous three JSON variables contain transaction data with price in US Dollar.
+
+The following JavaScript code is true in regards to the above JSON data structures:
+
+// priceUpdate was extracted from priceEvents as follows
+priceUpdate == JSON.parse(priceEvents._webSocketMessages[2].data);
+
+// priceUpdate refers to Bitcoin given the following relation
+priceUpdate.d.id == priceInfo.trendingList[3].id;
+
+// The price is $26633.33565790038 
+priceUpdate.d.p == 26633.33565790038;
+
+// priceUpdate.t represents the Unix timestamp with millis for the transaction
+priceUpdate.t == 1684436847032;  // represents May 18, 2023 7:07:27.032 PM
+
+// priceUpdate.mc represents the total amount traded since recorded.
+double tradeAmount = priceInfo.trendingList[i].mc - priceInfo.trendingList[i-1].mc;
+if(tradeAmount < 0) tradeAmount = 0;
+
+-----
+
+Considering a C# variable declared as "JsonObject priceInfo" containing the same priceInfo JSON data as above, write a C# method that extracts the available currency ids. Not that the ids are int values. Use JsonObject.GetValue<int>.
+
+-----
+
+Write a C# method that creates a WebSocket and exchanges simiar JSON data as priceEvents. Notice that type property defines whether the message is sent or received.
+

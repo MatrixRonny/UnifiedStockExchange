@@ -1,0 +1,617 @@
+Given the following JSON stored as string variable priceInfo, write a C# method that return a list of CryptoCurrency, which is defines as:
+
+    internal class CryptoCurrency
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = null!;
+        public string Symbol { get; set; } = null!;
+    }
+
+{
+	"app": {
+		"locale": "en-US",
+		"theme": "DAY",
+		"lang": "en",
+		"country": "",
+		"currency": {
+			"id": 2781,
+			"name": "United States Dollar",
+			"symbol": "usd",
+			"token": "$"
+		},
+		"bottomBannerHeights": {},
+		"browser": {},
+		"window": {
+			"width": 0,
+			"height": 0,
+			"isNarrowLayout": false
+		},
+		"modal": {
+			"instance": 0,
+			"data": {}
+		},
+		"message": "",
+		"isInApp": false
+	},
+	"cryptocurrency": {
+		"listingLatest": {
+			"page": 1,
+			"sort": "market_cap",
+			"sortDirection": "asc",
+			"data": [
+				{
+					"keysArr": [
+						"ath",
+						"atl",
+						"circulatingSupply",
+						"cmcRank",
+						"dateAdded",
+						"high24h",
+						"id",
+						"isActive",
+						"isAudited",
+						"lastUpdated",
+						"low24h",
+						"marketPairCount",
+						"maxSupply",
+						"name",
+						"quote.USD.dominance",
+						"quote.USD.fullyDilluttedMarketCap",
+						"quote.USD.lastUpdated",
+						"quote.USD.marketCap",
+						"quote.USD.marketCapByTotalSupply",
+						"quote.USD.name",
+						"quote.USD.percentChange1h",
+						"quote.USD.percentChange24h",
+						"quote.USD.percentChange30d",
+						"quote.USD.percentChange60d",
+						"quote.USD.percentChange7d",
+						"quote.USD.percentChange90d",
+						"quote.USD.price",
+						"quote.USD.selfReportedMarketCap",
+						"quote.USD.turnover",
+						"quote.USD.volume24h",
+						"quote.USD.volume30d",
+						"quote.USD.volume7d",
+						"quote.USD.ytdPriceChangePercentage",
+						"rank",
+						"selfReportedCirculatingSupply",
+						"slug",
+						"symbol",
+						"totalSupply",
+						"tvl"
+					],
+					"id": "COMPRESSED_KEYS_ARR",
+					"excludeProps": [
+						"auditInfoList"
+					]
+				},
+				[
+					68789.62593892214,
+					65.5260009765625,
+					19313625,
+					1,
+					"2013-04-28T00:00:00.000Z",
+					20423.165431454454,
+					1,
+					1,
+					false,
+					"2023-03-10T20:20:00.000Z",
+					19628.254309420507,
+					10087,
+					21000000,
+					"Bitcoin",
+					41.2881,
+					420418363960.45,
+					"2023-03-10T20:20:00.000Z",
+					386657267840.26547,
+					386657267840.26547,
+					"USD",
+					0.40767145,
+					-3.54787496,
+					-12.29565745,
+					15.96139779,
+					-10.51870049,
+					16.52043329,
+					20019.922093354584,
+					0,
+					0.11042421,
+					42696325140.98963,
+					1069433669770.0734,
+					200723728022.0951,
+					20.42,
+					1,
+					0,
+					"bitcoin",
+					"BTC",
+					19313625,
+					null,
+					null
+				],
+				[
+					4891.704697551414,
+					0.4208970069885254,
+					122373866.2178,
+					2,
+					"2015-08-07T00:00:00.000Z",
+					1444.8944907578287,
+					1027,
+					1,
+					true,
+					"2023-03-10T20:20:00.000Z",
+					1378.5254019388054,
+					6565,
+					null,
+					"Ethereum",
+					18.6034,
+					174088069021.46,
+					"2023-03-10T20:20:00.000Z",
+					174088069021.45906,
+					174088069021.45906,
+					"USD",
+					0.7230205,
+					-3.92557996,
+					-13.36061984,
+					7.29810963,
+					-9.1314249,
+					11.76992075,
+					1422.5918850322058,
+					0,
+					0.08093146,
+					14089201592.977894,
+					309524022785.2238,
+					50562963511.72685,
+					18.4541,
+					2,
+					0,
+					"ethereum",
+					"ETH",
+					122373866.2178,
+					null,
+					[
+						{
+							"coinId": "1027",
+							"auditor": "Fairyproof",
+							"auditStatus": 2,
+							"reportUrl": "https://fairyproof.com/report/Covalent"
+						}
+					]
+				]
+			],
+			"filters": {},
+			"totalItems": "9063",
+			"pageSize": 100
+		},
+		"ItemKeyMap": {},
+		"quoteKey": [],
+		"listingHistorical": {
+			"data": [],
+			"page": 1,
+			"sort": "",
+			"sortDirection": ""
+		},
+		"new": {
+			"page": 1,
+			"sort": "",
+			"sortDirection": "",
+			"data": []
+		},
+		"watchlist": {
+			"page": 1,
+			"sort": "",
+			"sortDirection": "",
+			"data": []
+		},
+		"map": {
+			"data": [],
+			"slugMap": {}
+		},
+		"info": {},
+		"prices": {},
+		"quotesLatest": {},
+		"quotesHistorical": {
+			"loading": true
+		},
+		"ohlcvHistorical": {},
+		"marketPairsLatest": {
+			"data": {}
+		},
+		"pricePerformanceStatsLatest": {
+			"data": {}
+		},
+		"topDerivatives": [],
+		"yieldFarmingRankingLatest": {
+			"filterKey": ""
+		},
+		"gainersLosers": {
+			"gainers": [],
+			"losers": [],
+			"sortGainers": "",
+			"sortDirectionGainers": "",
+			"sortLosers": "",
+			"sortDirectionLosers": ""
+		},
+		"trendingCoins": {
+			"sort": "",
+			"sortDirection": "",
+			"data": []
+		},
+		"mostViewed": {
+			"sort": "",
+			"sortDirection": "",
+			"data": []
+		},
+		"spotlight": {
+			"data": {
+				"trendingList": [
+					{
+						"id": 5994,
+						"dataType": 2,
+						"name": "Shiba Inu",
+						"symbol": "SHIB",
+						"slug": "shiba-inu",
+						"rank": 13,
+						"status": "active",
+						"marketCap": 5626399703.38,
+						"selfReportedMarketCap": 0,
+						"priceChange": {
+							"price": 0.000010247270068567333,
+							"priceChange24h": -2.29312285,
+							"priceChange7d": -9.33153128,
+							"priceChange30d": -24.79541776,
+							"volume24h": 480473743.33423629,
+							"lastUpdate": "2023-03-10T20:21:00.000Z"
+						}
+					},
+					{
+						"id": 7186,
+						"dataType": 2,
+						"name": "PancakeSwap",
+						"symbol": "CAKE",
+						"slug": "pancakeswap",
+						"rank": 66,
+						"status": "active",
+						"marketCap": 639916044.19,
+						"selfReportedMarketCap": 0,
+						"priceChange": {
+							"price": 3.5511435492632814,
+							"priceChange24h": -1.45946292,
+							"priceChange7d": -5.41680023,
+							"priceChange30d": -23.20770765,
+							"volume24h": 45795045.91739025,
+							"lastUpdate": "2023-03-10T20:21:00.000Z"
+						}
+					},
+					{
+						"id": 1,
+						"dataType": 2,
+						"name": "Bitcoin",
+						"symbol": "BTC",
+						"slug": "bitcoin",
+						"rank": 1,
+						"status": "active",
+						"marketCap": 386551524387.64,
+						"selfReportedMarketCap": 0,
+						"priceChange": {
+							"price": 20014.447023157933,
+							"priceChange24h": -3.51584663,
+							"priceChange7d": -10.52821471,
+							"priceChange30d": -12.32706542,
+							"volume24h": 42647646513.386089,
+							"lastUpdate": "2023-03-10T20:21:00.000Z"
+						}
+					}
+				]
+			}
+		},
+		"gravityRecommend": {
+			"data": {
+				"recommendArticles": [
+					{
+						"cover": "https://academy-public.coinmarketcap.com/srd-optimized-uploads/f25171a5431f4fc3b1046aae15d96f6c.png",
+						"assets": [
+							{
+								"name": "Decimal",
+								"coinId": 12400,
+								"slug": "decimal",
+								"symbol": "DEL"
+							}
+						],
+						"createdAt": "2023-03-07T11:00:37.598Z",
+						"meta": {
+							"title": "📈 Hi there, did you miss our news and updates? Midjourney x Decimal NFT",
+							"subtitle": "Intrigued? Midjourney x Decimal NFT Yes, you must have already read or heard that “leather bags” will soon be out of work and will not be needed. Bloggers, marketers, designers, copywriters, ",
+							"sourceName": "Decimal",
+							"language": "en",
+							"sourceUrl": "https://coinmarketcap.com/cryptown/articles/6407195724b7f93706ee5102",
+							"id": "6407195724b7f93706ee5102",
+							"slug": "6407195724b7f93706ee5102",
+							"likes": 1,
+							"shares": 0,
+							"announcement": false,
+							"views": 477,
+							"category": "nft",
+							"releasedAt": "2023-03-07T11:00:37.598Z",
+							"project": {
+								"nickname": "Decimal",
+								"avatarId": "62a97264794dfb763a32c3d9",
+								"username": "Decimal",
+								"guid": "14839194"
+							}
+						},
+						"type": "GRAVITY"
+					}
+				],
+				"recommendAccounts": [
+					{
+						"nickname": "PlayDapp",
+						"handle": "PlayDapp_IO",
+						"avatarId": "62bd691fc8261218d3899f79",
+						"createdTime": "1656556762822",
+						"type": 1,
+						"status": 0,
+						"biography": "PlayDapp is a blockchain-based ecosystem offering multiple games, NFTs, in-game item trading, and a tight-knit community.",
+						"originalBiography": [
+							[
+								{
+									"type": "text",
+									"content": "PlayDapp is a blockchain-based ecosystem offering multiple games, NFTs, in-game item trading, and a tight-knit community."
+								}
+							]
+						],
+						"websiteLink": "linktr.ee/playdapp",
+						"authType": 1,
+						"coinList": [
+							{
+								"id": 7461,
+								"symbol": "PLA",
+								"slug": "playdapp"
+							}
+						],
+						"announceType": 1,
+						"avatar": {
+							"url": "https://s3.coinmarketcap.com/static-gravity/image/8277c31cdcc64aca8e5b002a710f06b0.png",
+							"status": 2
+						},
+						"biographyAuditStatus": 2,
+						"preBiography": "",
+						"preOriginalBiography": "",
+						"preTopics": [],
+						"preCurrencies": [],
+						"banner": {
+							"url": "https://s3.coinmarketcap.com/static-gravity/image/bdaf34ca4ed646b9ab5f10ee05b12804.png",
+							"originalBannerUrl": "https://s3.coinmarketcap.com/static-gravity/image/2907bb19bc5f4ab38e9c8e943aed2742.png",
+							"status": 2
+						},
+						"guid": "86289101"
+					},
+					{
+						"nickname": "DeFiChain",
+						"handle": "DeFiChain",
+						"avatarId": "62cf664ffa2fdf1d6f615aca",
+						"createdTime": "1642161836698",
+						"type": 1,
+						"status": 0,
+						"biography": "A #DeFi and #Web3 gateway for #Bitcoin and #Ethereum ",
+						"originalBiography": [
+							[
+								{
+									"type": "text",
+									"content": "A #DeFi and #Web3 gateway for #Bitcoin and #Ethereum "
+								}
+							]
+						],
+						"websiteLink": "https://defichain.com/",
+						"authType": 1,
+						"coinList": [
+							{
+								"id": 5804,
+								"symbol": "DFI",
+								"slug": "defichain"
+							}
+						],
+						"announceType": 1,
+						"avatar": {
+							"url": "https://s3.coinmarketcap.com/static/img/portraits/62cf664ffa2fdf1d6f615aca.png",
+							"status": 2
+						},
+						"biographyAuditStatus": 2,
+						"preBiography": "",
+						"preOriginalBiography": "",
+						"preTopics": [],
+						"preCurrencies": [],
+						"banner": {
+							"url": "https://s3.coinmarketcap.com/static-gravity/image/007e95d709484573855431ffead968de.jpeg",
+							"originalBannerUrl": "https://s3.coinmarketcap.com/static-gravity/image/e78409129d144c81b775ab038811aa16.jpeg",
+							"status": 2
+						},
+						"guid": "43940087"
+					},
+					{
+						"nickname": "Qtum_Foundation",
+						"handle": "Qtum_Foundation",
+						"avatarId": "62e88280ae5a2d740c0774fd",
+						"createdTime": "1657651141774",
+						"type": 1,
+						"status": 0,
+						"biography": "Fast, Green, Stable, Decentralized. Qtum is a scalable Proof-of-Stake platform that allows developers to leverage the upstream benefits of Ethereum and Bitcoin.",
+						"originalBiography": [
+							[
+								{
+									"type": "text",
+									"content": "Fast, Green, Stable, Decentralized. Qtum is a scalable Proof-of-Stake platform that allows developers to leverage the upstream benefits of Ethereum and Bitcoin."
+								}
+							]
+						],
+						"currencies": [],
+						"birthDate": "1650438000000",
+						"websiteLink": "qtum.org",
+						"authType": 1,
+						"coinList": [
+							{
+								"id": 1684,
+								"symbol": "QTUM",
+								"slug": "qtum"
+							}
+						],
+						"announceType": 1,
+						"avatar": {
+							"url": "https://s3.coinmarketcap.com/static-gravity/image/fa0cdb0ffe8848b49e12ba2889769b33.png",
+							"status": 2
+						},
+						"guid": "86378958"
+					}
+				],
+				"recommendPosts": [
+					{
+						"gravityId": "325272392",
+						"owner": {
+							"nickname": "ICON Network",
+							"handle": "ICONNetwork",
+							"avatarId": "61359449293ccc2c4bcf07c7",
+							"createdTime": "1641355127726",
+							"type": 1,
+							"status": 0,
+							"biography": "🌐 ICON Network is a layer-one blockchain focused on building a multichain bridging solution that is scalable, chain-agnostic, and secure!\\n",
+							"originalBiography": [
+								[
+									{
+										"type": "text",
+										"content": "🌐 ICON Network is a layer-one blockchain focused on building a multichain bridging solution that is scalable, chain-agnostic, and secure!"
+									}
+								],
+								[
+									{
+										"type": "text",
+										"content": ""
+									}
+								]
+							],
+							"websiteLink": "https://icon.community/",
+							"authType": 1,
+							"coinList": [
+								{
+									"id": 2099,
+									"symbol": "ICX",
+									"slug": "icon"
+								}
+							],
+							"announceType": 1,
+							"avatar": {
+								"url": "https://s3.coinmarketcap.com/static-gravity/image/7969f226b8c1428f9285155c8c7880e5.png",
+								"status": 2
+							},
+							"banner": {
+								"url": "https://s3.coinmarketcap.com/static-gravity/image/edca22efe18b4051b07c03e643a21de1.png",
+								"originalBannerUrl": "https://s3.coinmarketcap.com/static-gravity/image/8b60d10eedf64839a18992cffb62a93e.png",
+								"status": 2
+							},
+							"guid": "39957492"
+						},
+						"rootId": "325272392",
+						"textContent": "Check out the latest Ecosystem Insights, where Fez and David give you an update on the most recent ICON $ICX   ecosystem highlights! 🌐\\r https://youtu.be/ijI-RT9bp44",
+						"commentCount": "1",
+						"likeCount": "7",
+						"isLiked": false,
+						"postTime": "1678200827271",
+						"status": 0,
+						"originalContent": [
+							[
+								{
+									"type": "text",
+									"content": "Check out the latest Ecosystem Insights, where Fez and David give you an update on the most recent ICON "
+								},
+								{
+									"type": "token",
+									"content": {
+										"id": 2099,
+										"symbol": "ICX",
+										"slug": "icon",
+										"name": "ICON"
+									}
+								},
+								{
+									"type": "text",
+									"content": "  ecosystem highlights! 🌐\\\\r "
+								},
+								{
+									"type": "link",
+									"content": {
+										"url": "https://youtu.be/ijI-RT9bp44"
+									}
+								}
+							]
+						],
+						"type": 0,
+						"isYours": false,
+						"topics": [],
+						"currencies": [
+							{
+								"id": 2099,
+								"symbol": "ICX",
+								"slug": "icon"
+							}
+						],
+						"bullish": true,
+						"projectUser": true,
+						"linkCardVisible": true,
+						"repostCount": "0",
+						"pinned": false,
+						"languageCode": "en",
+						"hasVote": false
+					}
+				]
+			}
+		},
+		"dexpairSearch": []
+	},
+	"exchange": {
+		"map": {
+			"data": []
+		},
+		"info": {},
+		"quotesLatest": {},
+		"marketPairsLatest": {
+			"data": {}
+		},
+		"fiatOnRamp": {
+			"activeSection": null,
+			"selectedCrypto": null,
+			"availableCurrencies": [
+				"USD",
+				"EUR",
+				"GBP",
+				"NGN",
+				"RUB"
+			],
+			"selectedCurrency": "USD",
+			"orderBy": "price",
+			"order": "asc",
+			"tableData": []
+		}
+	},
+	"globalMetrics": {
+		"quotesHistorical": {},
+		"trendingSearch": [],
+		"categoriesList": []
+	},
+	"watchlist": {
+		"loaded": false,
+		"data": [],
+		"onboarding": [],
+		"import": null,
+		"counts": {
+			"isLoading": false,
+			"data": {}
+		}
+	},
+	"user": {
+		"data": null,
+		"isLoading": false,
+		"isLoaded": true,
+		"loginModal": "",
+		"loginContinue": null
+	},
+	"notification": [],
+	"sponsoredAds": {}
+}
