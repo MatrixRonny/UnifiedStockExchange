@@ -1,4 +1,4 @@
 ﻿namespace UnifiedStockExchange.Contracts
 {
-    public delegate void PriceUpdate(DateTime time, decimal price, decimal amount);
+    public delegate void PriceUpdateHandler(DateTime time, decimal price, decimal amount);
 }

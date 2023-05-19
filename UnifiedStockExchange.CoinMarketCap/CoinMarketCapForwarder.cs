@@ -32,14 +32,31 @@ public class CoinMarketCapForwarder
             );
     }
 
-    public async Task ConnectAndProcessData()
+    public async Task ConnectAndProcessDataAsync()
     {
         await _webSocket.ConnectAsync(_coinMarketCapWs, CancellationToken.None);
-        foreach(PriceWriter priceWriter in _priceWriters.Values)
+        foreach (PriceWriter priceWriter in _priceWriters.Values)
         {
             await priceWriter.ConnectAsync();
         }
 
+        throw new Exception("Oops!");
+        await ProcessDataAsync();
+
+        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+    }
+
+    public async Task ReconnectAndProcessDataAsync()
+    {
+        await _webSocket.ConnectAsync(_coinMarketCapWs, CancellationToken.None);
+
+        await ProcessDataAsync();
+
+        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+    }
+
+    private async Task ProcessDataAsync()
+    {
         // Construct the subscription message
         var subscriptionMessage = new
         {
@@ -59,9 +76,8 @@ public class CoinMarketCapForwarder
             var message = await ReceiveMessageAsync();
             await ProcessDataAsync(message);
         }
-
-        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
     }
+
 
     private string GetCurrencyIdsString()
     {
@@ -76,18 +92,18 @@ public class CoinMarketCapForwarder
 
     private async Task<string> ReceiveMessageAsync()
     {
-        var buffer = new byte[1024];
-        var message = new StringBuilder();
+        byte[] buffer = new byte[1024];
+        MemoryStream memory = new MemoryStream();
 
         WebSocketReceiveResult result;
         do
         {
             result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            var data = Encoding.UTF8.GetString(buffer, 0, result.Count);
-            message.Append(data);
+            memory.Write(buffer, 0, result.Count);
         } while (!result.EndOfMessage);
 
-        return message.ToString();
+        memory.Seek(0, SeekOrigin.Begin);
+        return Encoding.UTF8.GetString(new ArraySegment<byte>(memory.GetBuffer(), 0, (int)memory.Length));
     }
 
     private async Task ProcessDataAsync(string message)

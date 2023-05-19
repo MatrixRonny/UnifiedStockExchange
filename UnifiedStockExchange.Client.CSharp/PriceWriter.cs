@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using UnifiedStockExchange.Client.CSharp;
 
 namespace UnifiedStockExchange.CSharp
 {
@@ -28,7 +29,9 @@ namespace UnifiedStockExchange.CSharp
             if (_isDisposed)
                 throw new ObjectDisposedException(nameof(PriceWriter));
 
+            _webSocket?.Dispose();
             ClientWebSocket webSocket = new ClientWebSocket();
+
             try
             {
                 UriBuilder uriBuilder = new UriBuilder(_unfiedStockExchangeUrl);
@@ -67,11 +70,11 @@ namespace UnifiedStockExchange.CSharp
         /// <returns></returns>
         public async Task SendPriceUpdateAsync(DateTime time, decimal price, decimal amount)
         {
-            string jsonData = JsonSerializer.Serialize(new
+            string jsonData = JsonSerializer.Serialize(new PriceUpdateData
             {
-                time = new DateTimeOffset(time).ToUnixTimeMilliseconds(),
-                price,
-                amount
+                Time = new DateTimeOffset(time).ToUnixTimeMilliseconds(),
+                Price = price,
+                Amount = amount
             });
 
             ArraySegment<byte> bytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonData));

@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Data;
 using System.Dynamic;
 using System.Diagnostics;
+using UnifiedStockExchange.Domain.DataTransfer;
 
 namespace UnifiedStockExchange.Controllers
 {
@@ -45,7 +46,7 @@ namespace UnifiedStockExchange.Controllers
 
         private async Task RecordPriceUpdates(string exchangeName, ValueTuple<string, string> tradingPair, WebSocket webSocket)
         {
-            PriceUpdate? priceHandler = _priceService.ListenForUpdates(exchangeName, tradingPair);
+            PriceUpdateHandler? priceHandler = _priceService.ListenForUpdates(exchangeName, tradingPair);
             try
             {
                 // https://stackoverflow.com/a/23784968/2109230
@@ -74,15 +75,13 @@ namespace UnifiedStockExchange.Controllers
 
                         ms.Seek(0, SeekOrigin.Begin);
                         string json = Encoding.UTF8.GetString(new ArraySegment<byte>(ms.GetBuffer(), 0, (int)ms.Length));
-                        //dynamic jsonObject = JsonSerializer.Deserialize<JsonObject>(json)!;
-                        JsonObject jsonObject = JsonSerializer.Deserialize<JsonObject>(json)!;
+                        PriceUpdateData priceUpdate = JsonSerializer.Deserialize<PriceUpdateData>(json)!;
 
                         try
                         {
-                            long unixTimeMillis = (long)jsonObject["time"]!;
-                            DateTime time = new DateTime(1970, 1, 1, 0, 0, 0, 0).AddMilliseconds(unixTimeMillis);
-                            decimal price = (decimal)jsonObject["price"]!;
-                            decimal amount = (decimal)jsonObject["amount"]!;
+                            DateTime time = new DateTime(1970, 1, 1, 0, 0, 0, 0).AddMilliseconds(priceUpdate.Time);
+                            decimal price = priceUpdate.Price;
+                            decimal amount = priceUpdate.Amount;
 
                             _persistenceService.RecordPrice(exchangeName, tradingPair, time, price, amount);
                             priceHandler(time, price, amount);

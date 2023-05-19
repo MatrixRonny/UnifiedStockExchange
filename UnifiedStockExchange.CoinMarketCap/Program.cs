@@ -21,7 +21,27 @@ internal class Program
         CryptoCurrencies = currencies.ToDictionary(it => it.Id, it => it).ToImmutableDictionary();
 
         var priceForwarder = new CoinMarketCapForwarder(ExchangeName, new int[] { 1 }, new Uri(WebSocketUrl), new Uri(args[0]));
-        await priceForwarder.ConnectAndProcessData();
+
+        bool firstTimeConnect = true;
+        while(true)
+        {
+            try
+            {
+                if(firstTimeConnect)
+                {
+                    firstTimeConnect = false;
+                    await priceForwarder.ConnectAndProcessDataAsync();
+                }
+                else
+                {
+                    await priceForwarder.ReconnectAndProcessDataAsync();
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine($"{e.GetType().Name}: {e.Message}\n{e.StackTrace}");
+            }
+        }
     }
 
     private static List<CryptoCurrency> GetCryptoCurrencies(string priceInfo)
