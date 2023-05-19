@@ -1,26 +1,27 @@
 using Microsoft.AspNetCore.Mvc;
+using UnifiedStockExchange.Services;
 
 namespace UnifiedStockExchange.Controllers
 {
     public class OverviewController : ApiControllerBase
     {
-        [HttpPost("[action]/{exchange}")]
-        public IEnumerable<string> GetAvailableCurrencyPairs(string exchange)
+        private readonly PriceExchangeService _exchangeService;
+
+        public OverviewController(PriceExchangeService exchangeService)
         {
-            return new ValueTuple<string,string>[]
-            {
-                ("USDT","BTC"),
-                ("USDT","ETH")
-            }.Select(it => $"{it.Item2}-{it.Item1}");
+            _exchangeService = exchangeService;
+        }
+
+        [HttpPost("[action]/{exchangeName}")]
+        public IEnumerable<string> GetAvailableCurrencyPairs(string exchangeName)
+        {
+            return _exchangeService.ActiveExchangeQuotes[exchangeName];
         }
 
         [HttpPost("[action]")]
         public IEnumerable<string> GetAvailableExchanges()
         {
-            return new string[]
-            {
-                "CoinMarketCap"
-            };
+            return _exchangeService.ActiveExchangeQuotes.Keys;
         }
     }
 }

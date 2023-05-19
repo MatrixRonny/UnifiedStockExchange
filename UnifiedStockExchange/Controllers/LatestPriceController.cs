@@ -3,6 +3,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using UnifiedStockExchange.Contracts;
+using UnifiedStockExchange.Domain.DataTransfer;
 using UnifiedStockExchange.Services;
 
 namespace UnifiedStockExchange.Controllers
@@ -32,7 +33,7 @@ namespace UnifiedStockExchange.Controllers
 
         private async Task SendPriceUpdates(string exchangeName, ValueTuple<string, string> tradingPair, WebSocket webSocket)
         {
-            PriceUpdate? priceListener = null;
+            PriceUpdateHandler? priceListener = null;
             try
             {
                 object lockObject = new object();
@@ -44,7 +45,12 @@ namespace UnifiedStockExchange.Controllers
                         Monitor.Wait(lockObject);
 
                         long unixTimeMillis = new DateTimeOffset(time).ToUnixTimeMilliseconds();
-                        string json = JsonSerializer.Serialize(new { time = unixTimeMillis, price, amount });
+                        string json = JsonSerializer.Serialize(new PriceUpdateData 
+                        { 
+                            Time = unixTimeMillis, 
+                            Price = price,
+                            Amount = amount 
+                        });
                         await webSocket.SendAsync(Encoding.UTF8.GetBytes(json), WebSocketMessageType.Text, true, CancellationToken.None);
 
                         Monitor.Pulse(lockObject);

@@ -1,4 +1,5 @@
-﻿using UnifiedStockExchange.Contracts;
+﻿using System.Collections.Immutable;
+using UnifiedStockExchange.Contracts;
 using UnifiedStockExchange.Domain.Utility;
 using UnifiedStockExchange.Utility;
 
@@ -6,11 +7,19 @@ namespace UnifiedStockExchange.Services
 {
     public class PriceExchangeService
     {
+        // [exchangeName][index] = tradingPair
         Dictionary<string, List<string>> _priceQuotes = new Dictionary<string, List<string>>();
-        Dictionary<string, PriceUpdate> _priceHandlers = new Dictionary<string, PriceUpdate>();
-        Dictionary<PriceUpdate, List<PriceUpdate>> _priceListeners = new Dictionary<PriceUpdate, List<PriceUpdate>>();
 
-        public PriceUpdate ListenForUpdates(string exchangeName, ValueTuple<string, string> tradingPair)
+        // [exchangeQuote] = PriceUpdateHandler
+        Dictionary<string, PriceUpdateHandler> _priceHandlers = new Dictionary<string, PriceUpdateHandler>();
+
+        // [fromHandler][index] = toHandler
+        Dictionary<PriceUpdateHandler, List<PriceUpdateHandler>> _priceListeners = new Dictionary<PriceUpdateHandler, List<PriceUpdateHandler>>();
+
+        public IReadOnlyDictionary<string, IReadOnlyList<string>> ActiveExchangeQuotes =>
+            _priceQuotes.ToImmutableDictionary(it => it.Key, it => (IReadOnlyList<string>)it.Value);
+
+        public PriceUpdateHandler ListenForUpdates(string exchangeName, ValueTuple<string, string> tradingPair)
         {
             lock (_priceQuotes)
             lock (_priceHandlers)
@@ -25,10 +34,10 @@ namespace UnifiedStockExchange.Services
                 {
                     case "CoinMarketCap":
                     {
-                        ValueReference<PriceUpdate> valRef = new();
-                        PriceUpdate del = (time, price, amount) =>
+                        ValueReference<PriceUpdateHandler> valRef = new();
+                        PriceUpdateHandler del = (time, price, amount) =>
                         {
-                            List<PriceUpdate> forward = _priceListeners[valRef.Value!];
+                            List<PriceUpdateHandler> forward = _priceListeners[valRef.Value!];
                             lock(forward)
                             {
                                 Parallel.ForEach(forward, update =>
@@ -51,7 +60,7 @@ namespace UnifiedStockExchange.Services
                         }
                         _priceQuotes[exchangeName].Add(quote);
                         _priceHandlers[exchangeQuote] = del;
-                        _priceListeners[del] = new List<PriceUpdate>();
+                        _priceListeners[del] = new List<PriceUpdateHandler>();
 
                         return del;
                     }
@@ -71,7 +80,7 @@ namespace UnifiedStockExchange.Services
                 string quote = tradingPair.ToQuote();
                 string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
              
-                PriceUpdate del = _priceHandlers[exchangeQuote];
+                PriceUpdateHandler del = _priceHandlers[exchangeQuote];
                 _priceListeners.Remove(del);
                 _priceHandlers.Remove(exchangeQuote);
 
@@ -83,7 +92,7 @@ namespace UnifiedStockExchange.Services
             }
         }
 
-        public void RegisterListener(string exchangeName, ValueTuple<string, string> tradingPair, PriceUpdate listener)
+        public void RegisterListener(string exchangeName, ValueTuple<string, string> tradingPair, PriceUpdateHandler listener)
         {
             lock (_priceHandlers)
             lock (_priceListeners)
@@ -92,12 +101,12 @@ namespace UnifiedStockExchange.Services
                 if (!_priceHandlers.ContainsKey(exchangeQuote))
                     throw new ApplicationException("Specified exchange and quote does not exist.");
 
-                PriceUpdate del = _priceHandlers[exchangeQuote];
+                PriceUpdateHandler del = _priceHandlers[exchangeQuote];
                 _priceListeners[del].Add(listener);
             }
         }
 
-        public void RemoveListener(string exchangeName, ValueTuple<string, string> tradingPair, PriceUpdate listener)
+        public void RemoveListener(string exchangeName, ValueTuple<string, string> tradingPair, PriceUpdateHandler listener)
         {
             lock (_priceHandlers)
             lock (_priceListeners)
@@ -106,7 +115,7 @@ namespace UnifiedStockExchange.Services
                 if (!_priceHandlers.ContainsKey(exchangeQuote))
                     throw new ApplicationException("Specified exchange and quote does not exist.");
 
-                PriceUpdate del = _priceHandlers[exchangeQuote];
+                PriceUpdateHandler del = _priceHandlers[exchangeQuote];
                 _priceListeners[del].Remove(listener);
             }
         }
