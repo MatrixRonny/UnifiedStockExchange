@@ -131,6 +131,7 @@ public class CoinMarketCapForwarder : IDisposable
             else
             {
                 lastVolume = _totalVolume[currencyId];
+                _totalVolume[currencyId] = currentVolume;
             }
         }
 

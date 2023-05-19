@@ -20,30 +20,32 @@ namespace UnifiedStockExchange.Controllers
     {
         // Stock Data library in Python: https://github.com/ccxt/ccxt
 
-        private readonly PriceExchangeService _priceService;
+        private readonly PriceExchangeService _exchangeService;
         private readonly PricePersistenceService _persistenceService;
 
-        public PriceIngestController(PriceExchangeService priceService, PricePersistenceService persistenceService)
+        public PriceIngestController(PriceExchangeService exchangeService, PricePersistenceService persistenceService)
         {
-            _priceService = priceService;
+            _exchangeService = exchangeService;
             _persistenceService = persistenceService;
         }
 
         [HttpGet("{exchangeName}/ws")]
-        public async Task Get(string exchangeName)
+        public async Task<ActionResult> Get(string exchangeName)
         {
-            //TODO: Adjust this WebSocket to receive multiple currencies.
+            if (_exchangeService.ActiveExchangeQuotes.Keys.Contains(exchangeName))
+                return Conflict("There is another WebSocket sending price data for the same exchange.");
 
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
                 using (WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync())
                 {
                     await RecordPriceUpdates(exchangeName, webSocket);
+                    return Ok();
                 }
             }
             else
             {
-                HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return BadRequest("Expecting a WebSocker request.");
             }
         }
 
@@ -99,11 +101,11 @@ namespace UnifiedStockExchange.Controllers
                                 string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
                                 if (!priceHandlers.TryGetValue(exchangeQuote, out priceHandler!))
                                 {
-                                    priceHandler = priceHandlers[exchangeQuote] = _priceService.ListenForUpdates(exchangeName, tradingPair);
+                                    priceHandler = priceHandlers[exchangeQuote] = _exchangeService.CreateIncommingListener(exchangeName, tradingPair);
                                 }
                             }
 
-                            priceHandler(time, priceUpdate.Price, priceUpdate.Amount);
+                            priceHandler(priceUpdate.TradingPair, time, priceUpdate.Price, priceUpdate.Amount);
                         }
                         catch
                         {
@@ -120,7 +122,7 @@ namespace UnifiedStockExchange.Controllers
                 {
                     var (_, tradingPair) = exchangeQuote.ToExchangeAndTradingPair();
 
-                    _priceService.CancelListen(exchangeName, tradingPair);
+                    _exchangeService.RemoveIncommingListener(exchangeName, tradingPair);
                     _persistenceService.FlushAndRemoveFromCache(exchangeName, tradingPair);
                 }
             }
