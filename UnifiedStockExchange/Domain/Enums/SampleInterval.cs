@@ -2,6 +2,7 @@
 {
     public enum SampleInterval
     {
+        Invalid = 0,
         OneMinute = 1,
         FiveMinutes = 5,
         FifteenMinutes = 15,

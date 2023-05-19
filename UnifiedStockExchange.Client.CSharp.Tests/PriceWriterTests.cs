@@ -30,13 +30,14 @@ namespace UnifiedStockExchange.CSharp.Tests
             await priceWriter.SendPriceUpdateAsync(dateTimeNow, price, amount);
             priceWriter.Dispose();
 
-            List<PriceCandle> priceHistory = historyApi.PriceHistoryGetHistoryDataFromPost(
-                appSettings.ExchangeName,
-                appSettings.Quote,
-                dateTimeNow, 
-                1, 
-                SampleInterval.OneMinute
-            );
+            List<PriceCandle> priceHistory = historyApi.PriceHistoryGetHistoryDataFromPost(new PriceHistoryRequest
+            {
+                ExchangeName = appSettings.ExchangeName,
+                TradingPair = appSettings.Quote,
+                FromDate = dateTimeNow,
+                CandleSamples = 1,
+                CandleInterval = SampleInterval.OneMinute
+            });
 
             ///// Assert /////
 
@@ -68,13 +69,14 @@ namespace UnifiedStockExchange.CSharp.Tests
             await priceWriter.SendPriceUpdateAsync(dateTimeNow, price, amount);
 
             await Task.Delay(TimeSpan.FromSeconds(10 * 60 + 1));
-            List<PriceCandle> priceHistory = historyApi.PriceHistoryGetHistoryDataFromPost(
-                appSettings.ExchangeName,
-                appSettings.Quote,
-                dateTimeNow,
-                1,
-                SampleInterval.OneMinute
-            );
+            List<PriceCandle> priceHistory = historyApi.PriceHistoryGetHistoryDataFromPost(new PriceHistoryRequest
+            {
+                ExchangeName = appSettings.ExchangeName,
+                TradingPair = appSettings.Quote,
+                FromDate = dateTimeNow,
+                CandleSamples = 1,
+                CandleInterval = SampleInterval.OneMinute
+            });
 
             ///// Assert /////
 
