@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Data;
 using UnifiedStockExchange.Contracts;
+using UnifiedStockExchange.Domain.DataTransfer;
 using UnifiedStockExchange.Domain.Entities;
 using UnifiedStockExchange.Domain.Enums;
 using UnifiedStockExchange.Exceptions;
@@ -20,21 +21,24 @@ namespace UnifiedStockExchange.Controllers
         }
 
         /// <summary>
-        /// Retrieves aggregated data based on <paramref name="candleInterval"/>. Returned data contains
+        /// Retrieves aggregated data based on <paramref name="body.CandleInterval"/>. Returned data contains
         /// <paramref name="candleSamples"/> samples of data or less in case there is not enough data.
         /// The implementation should always cache latest data to allow components to access it fast multiple times.
         /// </summary>
         [HttpPost("[action]")]
-        public IEnumerable<PriceCandle> GetHistoryDataFrom(string exchangeName, string tradingPair, DateTime fromDate, int candleSamples, SampleInterval candleInterval)
+        public ActionResult<IEnumerable<PriceCandle>> GetHistoryDataFrom(PriceHistoryRequest body)
         {
-            if (candleInterval < PersistenceInterval)
-                throw new StockDataException("Cannot request data more granular than " + PersistenceInterval);
+            if (body.FromDate == null)
+                return BadRequest("FromDate property is required for this action.");
 
-            fromDate = fromDate.TruncateByInterval(candleInterval);
-            DateTime untilDate = fromDate.AddMinutes((int)candleInterval * candleSamples);
+            if (body.CandleInterval < PersistenceInterval)
+                return BadRequest("Cannot request data more granular than " + PersistenceInterval);
 
-            var priceFilter = _persistenceService.SelectPriceData(exchangeName, tradingPair.ToTradingPair());
-            var historyData = priceFilter.Where(it => it.Date >= fromDate && it.Date < untilDate).ExecuteSelect();
+            body.FromDate = body.FromDate.Value.TruncateByInterval(body.CandleInterval);
+            DateTime untilDate = body.FromDate.Value.AddMinutes((int)body.CandleInterval * body.CandleSamples);
+
+            var priceFilter = _persistenceService.SelectPriceData(body.ExchangeName, body.TradingPair.ToTradingPair());
+            var historyData = priceFilter.Where(it => it.Date >= body.FromDate && it.Date < untilDate).ExecuteSelect();
             List<PriceCandle> result = new List<PriceCandle>();
 
             PriceCandle? currentSample = null;
@@ -44,24 +48,24 @@ namespace UnifiedStockExchange.Controllers
                 {
                     // Initialize first PriceCandle and add it to result.
                     currentSample = historyData[index].Clone();
-                    currentSample.Date = currentSample.Date.TruncateByInterval(candleInterval);
-                    currentSample.Interval = candleInterval;
+                    currentSample.Date = currentSample.Date.TruncateByInterval(body.CandleInterval);
+                    currentSample.Interval = body.CandleInterval;
                     result.Add(currentSample);
                 }
-                else if (currentSample.Date != historyData[index].Date.TruncateByInterval(candleInterval))
+                else if (currentSample.Date != historyData[index].Date.TruncateByInterval(body.CandleInterval))
                 {
                     // Fill missing samples with previous sample average.
-                    while (currentSample.Date.AddMinutes((int)candleInterval) != historyData[index].Date.TruncateByInterval(candleInterval))
+                    while (currentSample.Date.AddMinutes((int)body.CandleInterval) != historyData[index].Date.TruncateByInterval(body.CandleInterval))
                     {
                         decimal average = (currentSample.Open + currentSample.Close) / 2;
-                        currentSample = new PriceCandle { Date = currentSample.Date.AddMinutes((int)candleInterval) };
+                        currentSample = new PriceCandle { Date = currentSample.Date.AddMinutes((int)body.CandleInterval) };
                         currentSample.Open = currentSample.High = currentSample.Low = currentSample.Close = average;
                     }
 
                     // Create another PriceCandle and add it to result.
                     currentSample = historyData[index].Clone();
-                    currentSample.Date = currentSample.Date.TruncateByInterval(candleInterval);
-                    currentSample.Interval = candleInterval;
+                    currentSample.Date = currentSample.Date.TruncateByInterval(body.CandleInterval);
+                    currentSample.Interval = body.CandleInterval;
                     result.Add(currentSample);
                 }
                 else
@@ -85,7 +89,7 @@ namespace UnifiedStockExchange.Controllers
                 }
             }
 
-            return result;
+            return Ok(result);
         }
 
         /// <summary>
@@ -93,10 +97,13 @@ namespace UnifiedStockExchange.Controllers
         /// are retrieved before <paramref name="endDate"/>.
         /// </summary>
         [HttpPost("[action]")]
-        public IEnumerable<PriceCandle> GetHistoryDataUntil(string exchange, string tradingPair, DateTime endDate, int candleSamples, SampleInterval candleInterval)
+        public ActionResult<IEnumerable<PriceCandle>> GetHistoryDataUntil(PriceHistoryRequest body)
         {
-            DateTime startTime = endDate.AddMinutes(-(int)candleInterval * (candleSamples - 1));
-            return GetHistoryDataFrom(exchange, tradingPair, startTime, candleSamples, candleInterval);
+            if (body.EndDate == null)
+                return BadRequest("EndDate property is required for this action.");
+
+            body.FromDate = body.EndDate.Value.AddMinutes(-(int)body.CandleInterval * (body.CandleSamples - 1));
+            return GetHistoryDataFrom(body);
         }
     }
 }
