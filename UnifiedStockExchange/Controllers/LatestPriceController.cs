@@ -17,7 +17,7 @@ namespace UnifiedStockExchange.Controllers
             _priceService = priceService;
         }
 
-        [HttpGet("{exchangeName}/{fromCurency}/{toCurrency}/ws")]
+        [HttpGet("{exchangeName}/{fromCurrency}/{toCurrency}/ws")]
         public async Task Get(string exchangeName, string fromCurrency, string toCurrency)
         {
             if (HttpContext.WebSockets.IsWebSocketRequest)
@@ -37,23 +37,20 @@ namespace UnifiedStockExchange.Controllers
             try
             {
                 object lockObject = new object();
-                priceListener = async (time, price, amount) =>
+                priceListener = async (tradingPair, time, price, amount) =>
                 {
                     Monitor.Enter(lockObject);
                     try
                     {
-                        Monitor.Wait(lockObject);
-
                         long unixTimeMillis = new DateTimeOffset(time).ToUnixTimeMilliseconds();
                         string json = JsonSerializer.Serialize(new PriceUpdateData 
                         { 
+                            TradingPair = tradingPair,
                             Time = unixTimeMillis, 
                             Price = price,
                             Amount = amount 
                         });
                         await webSocket.SendAsync(Encoding.UTF8.GetBytes(json), WebSocketMessageType.Text, true, CancellationToken.None);
-
-                        Monitor.Pulse(lockObject);
                     }
                     catch
                     {
@@ -65,7 +62,7 @@ namespace UnifiedStockExchange.Controllers
                         Monitor.Exit(lockObject);
                     }
                 };
-                _priceService.RegisterListener(exchangeName, tradingPair, priceListener);
+                _priceService.AddForwardHandler(exchangeName, tradingPair, priceListener);
 
                 // Wait until other side closes websoket.
                 var receiveResult = await webSocket.ReceiveAsync(new byte[20], CancellationToken.None);
@@ -74,7 +71,7 @@ namespace UnifiedStockExchange.Controllers
             {
                 if (priceListener != null)
                 {
-                    _priceService.RegisterListener(exchangeName, tradingPair, priceListener);
+                    _priceService.RemoveForwardHandler(exchangeName, tradingPair, priceListener);
                 }
             }
         }
