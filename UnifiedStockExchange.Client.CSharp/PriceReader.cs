@@ -40,7 +40,7 @@ namespace UnifiedStockExchange.Client.CSharp
                 uriBuilder.Path = $"LatestPrice/{_exchangeName}/{_tradingPair.Item1}/{_tradingPair.Item2}/ws";
 
                 _tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                await _webSocket.ConnectAsync(uriBuilder.Uri, _tokenSource.Token);
+                await webSocket.ConnectAsync(uriBuilder.Uri, _tokenSource.Token);
             }
             catch (TaskCanceledException)
             {
@@ -70,6 +70,7 @@ namespace UnifiedStockExchange.Client.CSharp
             while (_webSocket.State == WebSocketState.Open)
             {
                 string json = await ReceiveMessageAsync();
+                json = json.Substring(0, json.IndexOf((char)0));
                 PriceUpdateWithTimestamp priceUpdate = JsonSerializer.Deserialize<PriceUpdateWithTimestamp>(json);
 
                 if (priceUpdate == null)
