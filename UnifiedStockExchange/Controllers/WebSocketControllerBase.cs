@@ -11,7 +11,7 @@ namespace UnifiedStockExchange.Controllers
         {
             byte[] messageBytes = Encoding.UTF8.GetBytes(message);
             await webSocket.SendAsync(messageBytes, WebSocketMessageType.Text, true, GetTimeoutToken());
-            await webSocket.SendAsync(new byte[0], WebSocketMessageType.Close, true, GetTimeoutToken());
+            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, message, new CancellationTokenSource(2000).Token);
         }
 
         protected CancellationToken GetTimeoutToken(int milliseconds = 1000)
