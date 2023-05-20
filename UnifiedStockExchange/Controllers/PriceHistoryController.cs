@@ -50,10 +50,12 @@ namespace UnifiedStockExchange.Controllers
                     currentSample = historyData[index].Clone();
                     currentSample.Date = currentSample.Date.TruncateByInterval(body.CandleInterval);
                     currentSample.Interval = body.CandleInterval;
-                    result.Add(currentSample);
                 }
                 else if (currentSample.Date != historyData[index].Date.TruncateByInterval(body.CandleInterval))
                 {
+                    currentSample.Close = historyData[index - 1].Close;
+                    result.Add(currentSample);
+
                     // Fill missing samples with previous sample average.
                     while (currentSample.Date.AddMinutes((int)body.CandleInterval) != historyData[index].Date.TruncateByInterval(body.CandleInterval))
                     {
@@ -73,7 +75,6 @@ namespace UnifiedStockExchange.Controllers
                     // Update current PriceCandle data with historyData price at current index;
 
                     PriceCandle newSample = historyData[index];
-                    currentSample.Close = newSample.Close;
 
                     if (currentSample.Low > historyData[index].Low)
                     {
@@ -87,6 +88,13 @@ namespace UnifiedStockExchange.Controllers
 
                     currentSample.Volume += historyData[index].Volume;
                 }
+            }
+
+            // After the loop, the currentSample needs to be added to result.
+            if (result.Count < body.CandleSamples && currentSample != null)
+            {
+                currentSample.Close = historyData.Last().Close;
+                result.Add(currentSample);
             }
 
             return Ok(result);
