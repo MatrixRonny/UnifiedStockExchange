@@ -68,7 +68,6 @@ namespace UnifiedStockExchange.Controllers
                     currentSample = historyData[index].Clone();
                     currentSample.Date = currentSample.Date.TruncateByInterval(body.CandleInterval);
                     currentSample.Interval = body.CandleInterval;
-                    result.Add(currentSample);
                 }
                 else
                 {
