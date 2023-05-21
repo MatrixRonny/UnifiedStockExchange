@@ -39,10 +39,10 @@ namespace UnifiedStockExchange.Services
                         ValueReference<PriceUpdateHandler> valRef = new();
                         PriceUpdateHandler handler = (tradingPair, time, price, amount) =>
                         {
-                            List<PriceUpdateHandler> forward = _priceForwarders[valRef.Value!];
-                            lock(forward)
+                            List<PriceUpdateHandler> forwardList = _priceForwarders[valRef.Value!];
+                            lock(forwardList)
                             {
-                                Parallel.ForEach(forward, update =>
+                                Parallel.ForEach(forwardList, update =>
                                 {
                                     try
                                     {
@@ -99,7 +99,7 @@ namespace UnifiedStockExchange.Services
                 ForwardingHandlerRemoved?.Invoke(forwarder);
             }
         }
-        public void AddForwardHandler(string exchangeName, ValueTuple<string, string> tradingPair, PriceUpdateHandler listener)
+        public void AddForwardHandler(string exchangeName, ValueTuple<string, string> tradingPair, PriceUpdateHandler priceForwarder)
         {
             lock (_priceListeners)
             lock (_priceForwarders)
@@ -108,12 +108,12 @@ namespace UnifiedStockExchange.Services
                 if (!_priceListeners.ContainsKey(exchangeQuote))
                     throw new ApplicationException("Specified exchange and trading pair does not exist.");
 
-                PriceUpdateHandler del = _priceListeners[exchangeQuote];
-                _priceForwarders[del].Add(listener);
+                PriceUpdateHandler priceListener = _priceListeners[exchangeQuote];
+                _priceForwarders[priceListener].Add(priceForwarder);
             }
         }
 
-        public void RemoveForwardHandler(string exchangeName, ValueTuple<string, string> tradingPair, PriceUpdateHandler listener)
+        public void RemoveForwardHandler(string exchangeName, ValueTuple<string, string> tradingPair, PriceUpdateHandler priceForwarder)
         {
             lock (_priceListeners)
             lock (_priceForwarders)
@@ -123,7 +123,7 @@ namespace UnifiedStockExchange.Services
                     throw new ApplicationException("Specified exchange and quote does not exist.");
 
                 PriceUpdateHandler del = _priceListeners[exchangeQuote];
-                _priceForwarders[del].Remove(listener);
+                _priceForwarders[del].Remove(priceForwarder);
             }
         }
     }
