@@ -39,7 +39,7 @@ namespace UnifiedStockExchange.Controllers
             {
                 using (WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync())
                 {
-                    await RecordPriceUpdates(exchangeName, webSocket);
+                    await RecordPriceUpdatesAsync(exchangeName, webSocket);
                     return Ok();
                 }
             }
@@ -49,9 +49,9 @@ namespace UnifiedStockExchange.Controllers
             }
         }
 
-        private async Task RecordPriceUpdates(string exchangeName, WebSocket webSocket)
+        private async Task RecordPriceUpdatesAsync(string exchangeName, WebSocket webSocket)
         {
-            Dictionary<string, PriceUpdateHandler> priceHandlers = new Dictionary<string, PriceUpdateHandler>();
+            Dictionary<string, PriceUpdateHandler> priceListenerList = new Dictionary<string, PriceUpdateHandler>();
 
             try
             {
@@ -94,18 +94,18 @@ namespace UnifiedStockExchange.Controllers
                                 priceUpdate.Amount
                             );
 
-                            PriceUpdateHandler priceHandler;
-                            lock(priceHandlers)
+                            PriceUpdateHandler priceListener;
+                            lock(priceListenerList)
                             {
                                 var tradingPair = priceUpdate.TradingPair.ToTradingPair();
                                 string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
-                                if (!priceHandlers.TryGetValue(exchangeQuote, out priceHandler!))
+                                if (!priceListenerList.TryGetValue(exchangeQuote, out priceListener!))
                                 {
-                                    priceHandler = priceHandlers[exchangeQuote] = _exchangeService.CreateIncommingListener(exchangeName, tradingPair);
+                                    priceListener = priceListenerList[exchangeQuote] = _exchangeService.CreateIncomingListener(exchangeName, tradingPair);
                                 }
                             }
 
-                            priceHandler(priceUpdate.TradingPair, time, priceUpdate.Price, priceUpdate.Amount);
+                            priceListener(priceUpdate.TradingPair, time, priceUpdate.Price, priceUpdate.Amount);
                         }
                         catch
                         {
@@ -118,13 +118,15 @@ namespace UnifiedStockExchange.Controllers
             }
             finally
             {
-                foreach (string exchangeQuote in priceHandlers.Keys)
+                foreach (string exchangeQuote in priceListenerList.Keys)
                 {
                     var (_, tradingPair) = exchangeQuote.ToExchangeAndTradingPair();
 
-                    _exchangeService.RemoveIncommingListener(exchangeName, tradingPair);
+                    _exchangeService.RemoveIncomingListener(exchangeName, tradingPair);
                     _persistenceService.FlushAndRemoveFromCache(exchangeName, tradingPair);
                 }
+
+                webSocket.Dispose();
             }
         }
     }

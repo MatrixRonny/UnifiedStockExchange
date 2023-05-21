@@ -21,22 +21,12 @@ internal class Program
         List<CryptoCurrency> currencies = GetCryptoCurrencies(priceInfoJson);
         CryptoCurrencies = currencies.ToDictionary(it => it.Id, it => it).ToImmutableDictionary();
 
-        var priceForwarder = new CoinMarketCapForwarder(ExchangeName, new int[] { 1 }, new Uri(WebSocketUrl), new Uri(args[0]));
-
-        bool firstTimeConnect = true;
         while(true)
         {
+            var priceForwarder = new CoinMarketCapForwarder(ExchangeName, new int[] { 1 }, new Uri(WebSocketUrl), new Uri(args[0]));
             try
             {
-                if(firstTimeConnect)
-                {
-                    firstTimeConnect = false;
-                    await priceForwarder.ConnectAndProcessDataAsync();
-                }
-                else
-                {
-                    await priceForwarder.ReconnectAndProcessDataAsync();
-                }
+                await priceForwarder.ConnectAndProcessDataAsync();
             }
             catch(Exception e)
             {

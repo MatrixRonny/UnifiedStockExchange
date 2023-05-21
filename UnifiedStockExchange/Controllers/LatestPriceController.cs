@@ -2,6 +2,7 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using UnifiedStockExchange.Contracts;
 using UnifiedStockExchange.Domain.DataTransfer;
 using UnifiedStockExchange.Services;
@@ -15,6 +16,19 @@ namespace UnifiedStockExchange.Controllers
         public LatestPriceController(PriceExchangeService priceService)
         {
             _priceService = priceService;
+            _priceService.ForwardingHandlerRemoved += OnForwardingHandlerRemoved;
+        }
+
+        Dictionary<PriceUpdateHandler, CancellationTokenSource> _activeForwarders = new Dictionary<PriceUpdateHandler, CancellationTokenSource>();
+        private void OnForwardingHandlerRemoved(PriceUpdateHandler priceForwarder)
+        {
+            CancellationTokenSource? tokenSource;
+            lock(_activeForwarders)
+            {
+                _activeForwarders.TryGetValue(priceForwarder, out tokenSource);
+            }
+
+            tokenSource?.Cancel();
         }
 
         [HttpGet("{exchangeName}/{fromCurrency}/{toCurrency}/ws")]
@@ -23,7 +37,7 @@ namespace UnifiedStockExchange.Controllers
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
                 using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                await SendPriceUpdates(exchangeName, (fromCurrency, toCurrency), webSocket);
+                await SendPriceUpdatesAsync(exchangeName, (fromCurrency, toCurrency), webSocket);
             }
             else
             {
@@ -31,13 +45,13 @@ namespace UnifiedStockExchange.Controllers
             }
         }
 
-        private async Task SendPriceUpdates(string exchangeName, ValueTuple<string, string> tradingPair, WebSocket webSocket)
+        private async Task SendPriceUpdatesAsync(string exchangeName, ValueTuple<string, string> tradingPair, WebSocket webSocket)
         {
-            PriceUpdateHandler? priceListener = null;
+            PriceUpdateHandler? priceForwarder = null;
             try
             {
                 object lockObject = new object();
-                priceListener = async (tradingPair, time, price, amount) =>
+                priceForwarder = async (tradingPair, time, price, amount) =>
                 {
                     Monitor.Enter(lockObject);
                     try
@@ -62,17 +76,25 @@ namespace UnifiedStockExchange.Controllers
                         Monitor.Exit(lockObject);
                     }
                 };
-                _priceService.AddForwardHandler(exchangeName, tradingPair, priceListener);
 
-                // Wait until other side closes websoket.
-                var receiveResult = await webSocket.ReceiveAsync(new byte[20], CancellationToken.None);
+                CancellationTokenSource tokenSource;
+                lock (_activeForwarders)
+                {
+                    tokenSource = _activeForwarders[priceForwarder] = new CancellationTokenSource();
+                }
+                _priceService.AddForwardHandler(exchangeName, tradingPair, priceForwarder);
+
+                // Wait until other side closes websoket or incoming price handler is removed.
+                var receiveResult = await webSocket.ReceiveAsync(new byte[20], tokenSource.Token);
             }
             finally
             {
-                if (priceListener != null)
+                if (priceForwarder != null)
                 {
-                    _priceService.RemoveForwardHandler(exchangeName, tradingPair, priceListener);
+                    _priceService?.RemoveForwardHandler(exchangeName, tradingPair, priceForwarder);
+                    _activeForwarders.Remove(priceForwarder);
                 }
+                webSocket.Dispose();
             }
         }
     }
