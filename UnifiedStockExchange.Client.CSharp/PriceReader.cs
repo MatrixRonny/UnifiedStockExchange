@@ -49,7 +49,7 @@ namespace UnifiedStockExchange.Client.CSharp
 
             _webSocket = webSocket;
 
-            ReceivePriceUpdatesAsync();
+            await ReceivePriceUpdatesAsync();
         }
 
         public void Disconnect()
@@ -65,7 +65,7 @@ namespace UnifiedStockExchange.Client.CSharp
             }
         }
 
-        private async void ReceivePriceUpdatesAsync()
+        private async Task ReceivePriceUpdatesAsync()
         {
             while (_webSocket.State == WebSocketState.Open)
             {
