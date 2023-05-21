@@ -29,39 +29,34 @@ public class CoinMarketCapForwarder : IDisposable
 
     public async Task ConnectAndProcessDataAsync()
     {
+        if (_isDisposed)
+            throw new ObjectDisposedException(nameof(CoinMarketCapForwarder));
+
         _webSocket = new ClientWebSocket();
         _webSocket.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0");
+        await _webSocket.ConnectAsync(_coinMarketCapWs, CancellationToken.None);
 
         _priceWriter = new PriceWriter(_unifiedExchangeWs.AbsoluteUri, _exchangeName);
-
-        await _webSocket.ConnectAsync(_coinMarketCapWs, CancellationToken.None);
         await _priceWriter.ConnectAsync();
 
-        await ProcessDataAsync();
-
-        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+        try
+        {
+            await ProcessWebSocketDataAsync();
+        }
+        finally
+        {
+            _webSocket.Dispose();
+            _priceWriter.Dispose();
+        }
     }
 
-    public async Task ReconnectAndProcessDataAsync()
-    {
-        _webSocket?.Dispose();
-        _webSocket = new ClientWebSocket();
-        _webSocket.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0");
-
-        await _webSocket.ConnectAsync(_coinMarketCapWs, CancellationToken.None);
-
-        await ProcessDataAsync();
-
-        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-    }
-
-    private async Task ProcessDataAsync()
+    private async Task ProcessWebSocketDataAsync()
     {
         // Construct the subscription message
         var subscriptionMessage = new
         {
             method = "RSUBSCRIPTION",
-            @params = new[] { "main-site@crypto_price_5s@{}@normal", GetCurrencyIdsString() }
+            @params = new[] { "main-site@crypto_price_5s@{}@normal", String.Join(",", _currencyIds) }
         };
 
         // Send the subscription message
@@ -73,15 +68,22 @@ public class CoinMarketCapForwarder : IDisposable
         // Process subsequent receive messages
         while (_webSocket.State == WebSocketState.Open)
         {
-            var message = await ReceiveMessageAsync();
-            await ProcessDataAsync(message);
+            await ReceiveAndForwardPriceAsync();
         }
     }
 
-
-    private string GetCurrencyIdsString()
+    private async Task ReceiveAndForwardPriceAsync()
     {
-        return string.Join(",", _currencyIds);
+        var message = await ReceiveMessageAsync();
+
+        var dataObject = JsonConvert.DeserializeObject<JObject>(message);
+
+        var currencyId = dataObject["d"]["id"].Value<int>();
+        var price = dataObject["d"]["p"].Value<double>();
+        var totalVolume = dataObject["d"]["mc"].Value<double>();
+        var unixTimeMillis = long.Parse(dataObject["t"].Value<string>());
+
+        await SendPriceUpdateAsync(currencyId, price, totalVolume, unixTimeMillis);
     }
 
     private async Task SendMessageAsync(string message)
@@ -104,18 +106,6 @@ public class CoinMarketCapForwarder : IDisposable
 
         memory.Seek(0, SeekOrigin.Begin);
         return Encoding.UTF8.GetString(new ArraySegment<byte>(memory.GetBuffer(), 0, (int)memory.Length));
-    }
-
-    private async Task ProcessDataAsync(string message)
-    {
-        var dataObject = JsonConvert.DeserializeObject<JObject>(message);
-
-        var currencyId = dataObject["d"]["id"].Value<int>();
-        var price = dataObject["d"]["p"].Value<double>();
-        var totalVolume = dataObject["d"]["mc"].Value<double>();
-        var unixTimeMillis = long.Parse(dataObject["t"].Value<string>());
-
-        await SendPriceUpdateAsync(currencyId, price, totalVolume, unixTimeMillis);
     }
 
     Dictionary<int, double> _totalVolume = new Dictionary<int, double>();
