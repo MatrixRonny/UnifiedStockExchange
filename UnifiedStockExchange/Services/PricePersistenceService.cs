@@ -6,6 +6,7 @@ using System.Data;
 using UnifiedStockExchange.DataAccess;
 using UnifiedStockExchange.Domain.Entities;
 using UnifiedStockExchange.Domain.Enums;
+using UnifiedStockExchange.Exceptions;
 using UnifiedStockExchange.Utility;
 using static UnifiedStockExchange.Domain.Constants.StockConstants;
 
@@ -100,10 +101,15 @@ namespace UnifiedStockExchange.Services
                 {
                     // Store existing PriceCandle and create new one.
 
-                    TableDataAccess<PriceCandle> dataAccess = _tableAccess[exchangeQuote];
-                    lock (dataAccess)
+                    try
                     {
+                        TableDataAccess<PriceCandle> dataAccess = _tableAccess[exchangeQuote];
                         dataAccess.Insert(_priceData[exchangeQuote]);
+                    }
+                    catch(ConstraintViolationException)
+                    {
+                        //EMPTY: The current sample may have been flushed due to WebSocket failure. On reconnect, the price has already
+                        //  been recorded for the current date, considering that price is recorded once per PersistenceInterval.
                     }
 
                     priceCandle.Date = TruncateDateToMinute(time);

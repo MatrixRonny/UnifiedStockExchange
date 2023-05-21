@@ -1,5 +1,6 @@
 ﻿using ServiceStack.OrmLite;
 using System.Data;
+using System.Data.SQLite;
 using System.Reflection;
 using UnifiedStockExchange.Exceptions;
 
@@ -109,7 +110,17 @@ namespace UnifiedStockExchange.DataAccess
             _dialectProvider.PrepareParameterizedInsertStatement<T>(sqlCmd, tableName: _tableName);
             _dialectProvider.SetParameterValues<T>(sqlCmd, entity);
 
-            sqlCmd.ExecuteNonQuery();
+            try
+            {
+                sqlCmd.ExecuteNonQuery();
+            }
+            catch(SQLiteException e)
+            {
+                if(e.ErrorCode == 19)
+                {
+                    throw new ConstraintViolationException(e.Message, e);
+                }
+            }
         }
 
         bool _isDisposed;
