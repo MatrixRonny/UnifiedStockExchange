@@ -16,7 +16,7 @@ namespace UnifiedStockExchange.DataAccess
             _sqlExpression.ModelDef.Alias = tableName;
         }
 
-        public UpdateFilter(SqlExpression<T> sqlExpression, IDbConnection connection)
+        private UpdateFilter(SqlExpression<T> sqlExpression, IDbConnection connection)
         {
             _sqlExpression = sqlExpression;
             _connection = connection;

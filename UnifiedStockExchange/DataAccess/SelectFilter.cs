@@ -15,7 +15,7 @@ namespace UnifiedStockExchange.DataAccess
             _sqlExpression = _connection.From<T>(tableName);
         }
 
-        public SelectFilter(SqlExpression<T> sqlExpression, IDbConnection connection)
+        private SelectFilter(SqlExpression<T> sqlExpression, IDbConnection connection)
         {
             _sqlExpression = sqlExpression;
             _connection = connection;
