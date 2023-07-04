@@ -16,7 +16,7 @@ namespace UnifiedStockExchange.DataAccess
             _sqlExpression.ModelDef.Alias = tableName;
         }
 
-        public DeleteFilter(SqlExpression<T> sqlExpression, IDbConnection connection)
+        private DeleteFilter(SqlExpression<T> sqlExpression, IDbConnection connection)
         {
             _sqlExpression = sqlExpression;
             _connection = connection;
