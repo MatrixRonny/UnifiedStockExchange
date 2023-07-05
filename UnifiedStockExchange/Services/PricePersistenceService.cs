@@ -2,11 +2,11 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using ServiceStack.OrmLite;
+using ServiceStack.OrmLite.DataAccess;
 using System.Data;
-using UnifiedStockExchange.DataAccess;
+using System.Data.SQLite;
 using UnifiedStockExchange.Domain.Entities;
 using UnifiedStockExchange.Domain.Enums;
-using UnifiedStockExchange.Exceptions;
 using UnifiedStockExchange.Utility;
 using static UnifiedStockExchange.Domain.Constants.StockConstants;
 
@@ -106,7 +106,7 @@ namespace UnifiedStockExchange.Services
                         TableDataAccess<PriceCandle> dataAccess = _tableAccess[exchangeQuote];
                         dataAccess.Insert(_priceData[exchangeQuote]);
                     }
-                    catch(ConstraintViolationException)
+                    catch(SQLiteException e) when(e.ErrorCode == 19)
                     {
                         //EMPTY: The current sample may have been flushed due to WebSocket failure. On reconnect, the price has already
                         //  been recorded for the current date, considering that price is recorded once per PersistenceInterval.
@@ -148,7 +148,7 @@ namespace UnifiedStockExchange.Services
 
         }
 
-        public SelectFilter<PriceCandle> SelectPriceData(string exchangeName, ValueTuple<string, string> tradingPair)
+        public ISelectFilter<PriceCandle> SelectPriceData(string exchangeName, ValueTuple<string, string> tradingPair)
         {
             string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
             TableDataAccess<PriceCandle> priceData = new TableDataAccess<PriceCandle>(_connectionFactory, "PriceData_" + exchangeQuote);

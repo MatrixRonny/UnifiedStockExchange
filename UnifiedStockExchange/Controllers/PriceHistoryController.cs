@@ -4,7 +4,6 @@ using UnifiedStockExchange.Contracts;
 using UnifiedStockExchange.Domain.DataTransfer;
 using UnifiedStockExchange.Domain.Entities;
 using UnifiedStockExchange.Domain.Enums;
-using UnifiedStockExchange.Exceptions;
 using UnifiedStockExchange.Services;
 using UnifiedStockExchange.Utility;
 using static UnifiedStockExchange.Domain.Constants.StockConstants;
