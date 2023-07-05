@@ -32,12 +32,12 @@ public class CoinMarketCapForwarder : IDisposable
         if (_isDisposed)
             throw new ObjectDisposedException(nameof(CoinMarketCapForwarder));
 
+        _priceWriter = new PriceWriter(_unifiedExchangeWs.AbsoluteUri, _exchangeName);
+        await _priceWriter.ConnectAsync();
+
         _webSocket = new ClientWebSocket();
         _webSocket.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0");
         await _webSocket.ConnectAsync(_coinMarketCapWs, CancellationToken.None);
-
-        _priceWriter = new PriceWriter(_unifiedExchangeWs.AbsoluteUri, _exchangeName);
-        await _priceWriter.ConnectAsync();
 
         try
         {
