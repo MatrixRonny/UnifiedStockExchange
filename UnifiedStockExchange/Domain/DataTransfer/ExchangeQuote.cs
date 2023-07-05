@@ -1,4 +1,4 @@
-﻿namespace UnifiedStockExchange.Domain.Entities
+﻿namespace UnifiedStockExchange.Domain.DataTransfer
 {
     public class ExchangeQuote
     {
