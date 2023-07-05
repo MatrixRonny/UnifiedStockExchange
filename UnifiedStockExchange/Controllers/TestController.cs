@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ServiceStack;
 using ServiceStack.OrmLite;
+using ServiceStack.OrmLite.DataAccess;
 using UnifiedStockExchange.Contracts;
-using UnifiedStockExchange.DataAccess;
 using UnifiedStockExchange.Domain.Entities;
 using UnifiedStockExchange.Domain.Enums;
 
