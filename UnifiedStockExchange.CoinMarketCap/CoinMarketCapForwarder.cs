@@ -83,6 +83,8 @@ public class CoinMarketCapForwarder : IDisposable
         var totalVolume = dataObject["d"]["mc"].Value<double>();
         var unixTimeMillis = long.Parse(dataObject["t"].Value<string>());
 
+        unixTimeMillis -= 3 * 60 * 1000;  // Convert to UTC time.
+
         await SendPriceUpdateAsync(currencyId, price, totalVolume, unixTimeMillis);
     }
 

@@ -85,7 +85,7 @@ namespace UnifiedStockExchange.Controllers
 
                         try
                         {
-                            DateTime time = new DateTime(1970, 1, 1, 0, 0, 0, 0).AddMilliseconds(priceUpdate.Time);
+                            DateTime time = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(priceUpdate.Time);
                             _persistenceService.RecordPrice(
                                 exchangeName, 
                                 priceUpdate.TradingPair.ToTradingPair(), 
