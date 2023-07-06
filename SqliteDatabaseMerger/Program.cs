@@ -52,8 +52,10 @@ for(int index=0; index<tableNames.Count; index++)
         int totalRecords = reader.GetInt32(0);
         reader.NextResult();
 
-        IDbCommand insertCommand = destConn.CreateCommand();
         IList<string> columns = Enumerable.Range(0, reader.FieldCount).Select(it => reader.GetName(it)).ToList();
+        string pkColumn = srcConn.Single<string>($"SELECT name FROM pragma_table_info({dialectProvider.GetQuotedTableName(tableName)}) WHERE pk <> 0");
+
+        IDbCommand insertCommand = destConn.CreateCommand();
         insertCommand.CommandText = $"INSERT INTO {dialectProvider.GetQuotedTableName(tableName)}\r\n";
         insertCommand.CommandText += $"VALUES({String.Join(',', columns.Select((it, i) => "@" + i))})";
 
@@ -84,17 +86,17 @@ for(int index=0; index<tableNames.Count; index++)
                 ((SQLiteParameter)insertCommand.Parameters[i]!).Value = reader.GetValue(i);
             }
 
-            try
-            {
-                // Decreasing batchCount in case of error prevents delaying the transaction.
-                batchCount--;
+            // Decreasing batchCount in case of error prevents delaying the transaction.
+            batchCount--;
+
+            //TODO: Only works for single column PK.
+            object pkValue = reader[pkColumn];
+            string isDuplSql = $"SELECT COUNT(*) FROM {dialectProvider.GetQuotedTableName(tableName)}\r\n";
+            isDuplSql += $"WHERE {dialectProvider.GetQuotedColumnName(pkColumn)}=@pkValue";
+            if (destConn.Single<int>(isDuplSql, new { pkValue }) == 0)
                 insertCommand.ExecuteNonQuery();
-            }
-            catch(SQLiteException e) when(e.ErrorCode == 19)
-            {
-                //INFO: Skip duplicate record.
+            else
                 duplicateCount++;
-            }
 
             if (batchCount == 0)
             {
@@ -115,10 +117,11 @@ for(int index=0; index<tableNames.Count; index++)
         trans?.Dispose();
 
         Console.Write(
-            "\rTable {0}/{1}, Record {2}/{3}, Duplicate {4}({5}%)",
+            "\rTable {0}/{1}, Record {2}/{3}, Duplicate {4}({5:0.00}%), Speed {6:0.00}/second",
             index + 1, tableNames.Count,
             recordNumber, totalRecords,
-            duplicateCount, duplicateCount * 100.0 / recordNumber
+            duplicateCount, duplicateCount * 100.0 / recordNumber,
+            recordNumber / stopwatch.Elapsed.TotalSeconds
         );
     }
 }
