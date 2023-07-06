@@ -2,44 +2,60 @@
 using ServiceStack.OrmLite.Dapper;
 using System.Data;
 using System.Data.SQLite;
+using System.Diagnostics;
 
 IOrmLiteDialectProvider dialectProvider = SqliteDialect.Provider;
 
 Console.Write("SourceDatabase=");
-string? srcDb = Console.ReadLine();
+string? srcDb = Console.ReadLine()?.Trim('"');
 
 Console.Write("DestinationDatabase=");
-string? destDb = Console.ReadLine();
+string? destDb = Console.ReadLine()?.Trim('"');
 
 IDbConnection srcConn = new OrmLiteConnectionFactory(srcDb, dialectProvider).CreateDbConnection();
 IDbConnection destConn = new OrmLiteConnectionFactory(destDb, dialectProvider).CreateDbConnection();
-
 srcConn.Open();
 destConn.Open();
+
+//DEBUG: Trying to see if native library is considerably faster.
+//IDbConnection srcConn2 = new SQLiteConnection("Data Source=" + srcDb);
+//IDbConnection destConn2 = new SQLiteConnection("Data Source=" + destDb);
+//srcConn2.Open();
+//destConn2.Open();
 
 List<string> tableNames = srcConn.Select<string>("SELECT name FROM sqlite_schema WHERE type='table'");
 
 //TODO: Need to consider FK graph when inserting. Also, create transaction to ensure join data is consistent after insert.
-foreach(string table in tableNames)
+for(int index=0; index<tableNames.Count; index++)
 {
-    if(!destConn.TableExists(table))
+    // Preserve previous final print.
+    Console.WriteLine();
+
+    string tableName = tableNames[index];
+    if(!destConn.TableExists(tableName))
     {
-        string tableSchema = srcConn.Single<string>("SELECT sql FROM sqlite_schema WHERE type='table' AND name=@tableName", new { tableName = table});
+        string tableSchema = srcConn.Single<string>("SELECT sql FROM sqlite_schema WHERE type='table' AND name=@tableName", new { tableName});
         destConn.ExecuteNonQuery(tableSchema);
 
-        List<string> indexQueries = srcConn.Select<string>("SELECT sql FROM sqlite_schema WHERE type='index' AND tbl_name=@tableName", new { tableName = table });
+        List<string> indexQueries = srcConn.Select<string>("SELECT sql FROM sqlite_schema WHERE type='index' AND tbl_name=@tableName", new { tableName });
         foreach(string query in indexQueries.Where(it => it != null))
         {
             destConn.ExecuteNonQuery(query);
         }
     }
 
-    using (IDataReader reader = srcConn.ExecuteReader($"SELECT * FROM {dialectProvider.GetQuotedTableName(table)}"))
+    string selectCount = $"SELECT COUNT(*) FROM {dialectProvider.GetQuotedTableName(tableName)}";
+    string selectAll = $"SELECT * FROM {dialectProvider.GetQuotedTableName(tableName)}";
+    using (IDataReader reader = srcConn.ExecuteReader($"{selectCount}; {selectAll}"))
     {
+        reader.Read();
+        int totalRecords = reader.GetInt32(0);
+        reader.NextResult();
+
         IDbCommand insertCommand = destConn.CreateCommand();
         IList<string> columns = Enumerable.Range(0, reader.FieldCount).Select(it => reader.GetName(it)).ToList();
-        insertCommand.CommandText = $"INSERT INTO {dialectProvider.GetQuotedTableName(table)}";
-        insertCommand.CommandText += $" VALUES({String.Join(',', columns.Select((it, i) => "@" + i))})";
+        insertCommand.CommandText = $"INSERT INTO {dialectProvider.GetQuotedTableName(tableName)}\r\n";
+        insertCommand.CommandText += $"VALUES({String.Join(',', columns.Select((it, i) => "@" + i))})";
 
         for (int i = 0; i < columns.Count; i++)
         {
@@ -49,11 +65,18 @@ foreach(string table in tableNames)
 
         int batchCount = 0;
         IDbTransaction? trans = null;
+        int duplicateCount = 0;
+        int recordNumber = 0;
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
         while (reader.Read())
         {
+            recordNumber++;
+
             if(batchCount == 0)
             {
                 trans = destConn.BeginTransaction();
+                insertCommand.Transaction = trans;
                 batchCount = 1000;
             }
             for (int i = 0; i < columns.Count; i++)
@@ -63,12 +86,14 @@ foreach(string table in tableNames)
 
             try
             {
-                insertCommand.ExecuteNonQuery();
+                // Decreasing batchCount in case of error prevents delaying the transaction.
                 batchCount--;
+                insertCommand.ExecuteNonQuery();
             }
-            catch
+            catch(SQLiteException e) when(e.ErrorCode == 19)
             {
-                //EMPTY: Skip inserting record.
+                //INFO: Skip duplicate record.
+                duplicateCount++;
             }
 
             if (batchCount == 0)
@@ -76,12 +101,30 @@ foreach(string table in tableNames)
                 trans!.Commit();
                 trans.Dispose();
             }
+            
+            Console.Write(
+                "\rTable {0}/{1}, Record {2}/{3}, Duplicate {4}({5:0.00}%), Speed {6:0.00}/second",
+                index + 1, tableNames.Count,
+                recordNumber, totalRecords,
+                duplicateCount, duplicateCount * 100.0 / recordNumber,
+                recordNumber / stopwatch.Elapsed.TotalSeconds
+            );
         }
 
         trans?.Commit();
         trans?.Dispose();
+
+        Console.Write(
+            "\rTable {0}/{1}, Record {2}/{3}, Duplicate {4}({5}%)",
+            index + 1, tableNames.Count,
+            recordNumber, totalRecords,
+            duplicateCount, duplicateCount * 100.0 / recordNumber
+        );
     }
 }
 
 srcConn.Close();
 destConn.Close();
+
+Console.WriteLine();
+Console.ReadKey();
