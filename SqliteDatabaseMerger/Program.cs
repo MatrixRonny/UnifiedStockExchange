@@ -6,12 +6,10 @@ using System.Data.SQLite;
 IOrmLiteDialectProvider dialectProvider = SqliteDialect.Provider;
 
 Console.Write("SourceDatabase=");
-//string? srcDb = Console.ReadLine();
-string? srcDb = @"C:\Users\MatrixRonny\Desktop\New folder\StockDataDB-new.sqlite";
+string? srcDb = Console.ReadLine();
 
 Console.Write("DestinationDatabase=");
-//string? destDb = Console.ReadLine();
-string? destDb = @"C:\Users\MatrixRonny\Desktop\New folder\StockDataDB-old2.sqlite";
+string? destDb = Console.ReadLine();
 
 IDbConnection srcConn = new OrmLiteConnectionFactory(srcDb, dialectProvider).CreateDbConnection();
 IDbConnection destConn = new OrmLiteConnectionFactory(destDb, dialectProvider).CreateDbConnection();
@@ -49,35 +47,39 @@ foreach(string table in tableNames)
             insertCommand.AddParam(i.ToString(), dbType: dbType);
         }
 
-        using (IDbTransaction trans = destConn.BeginTransaction())
+        int batchCount = 0;
+        IDbTransaction? trans = null;
+        while (reader.Read())
         {
-            int batchCount = 1000;
-            while (reader.Read())
+            if(batchCount == 0)
             {
-                for (int i = 0; i < columns.Count; i++)
-                {
-                    ((SQLiteParameter)insertCommand.Parameters[i]!).Value = reader.GetValue(i);
-                }
-
-                try
-                {
-                    insertCommand.ExecuteNonQuery();
-                    batchCount--;
-                }
-                catch
-                {
-                    //EMPTY: Skip inserting record.
-                }
-
-                if (batchCount == 0)
-                {
-                    trans.Commit();
-                    batchCount = 1000;
-                }
+                trans = destConn.BeginTransaction();
+                batchCount = 1000;
+            }
+            for (int i = 0; i < columns.Count; i++)
+            {
+                ((SQLiteParameter)insertCommand.Parameters[i]!).Value = reader.GetValue(i);
             }
 
-            trans.Commit();
+            try
+            {
+                insertCommand.ExecuteNonQuery();
+                batchCount--;
+            }
+            catch
+            {
+                //EMPTY: Skip inserting record.
+            }
+
+            if (batchCount == 0)
+            {
+                trans!.Commit();
+                trans.Dispose();
+            }
         }
+
+        trans?.Commit();
+        trans?.Dispose();
     }
 }
 
