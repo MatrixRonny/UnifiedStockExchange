@@ -44,7 +44,14 @@ public class CoinMarketCapForwarder : IDisposable
 
         _webSocket = new ClientWebSocket();
         _webSocket.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0");
-        await _webSocket.ConnectAsync(_coinMarketCapWs, CancellationToken.None);
+        try
+        {
+            await _webSocket.ConnectAsync(_coinMarketCapWs, CancellationToken.None);
+        }
+        catch(WebSocketException e)
+        {
+            throw new ApplicationException("Could not connect to CoinMarketCap WebSocket: " + e.Message);
+        }
 
         try
         {
@@ -89,8 +96,6 @@ public class CoinMarketCapForwarder : IDisposable
         var price = dataObject["d"]["p"].Value<double>();
         var totalVolume = dataObject["d"]["mc"].Value<double>();
         var unixTimeMillis = long.Parse(dataObject["t"].Value<string>());
-
-        unixTimeMillis -= 3 * 60 * 1000;  // Convert to UTC time.
 
         await SendPriceUpdateAsync(currencyId, price, totalVolume, unixTimeMillis);
     }
