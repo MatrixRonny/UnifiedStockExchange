@@ -71,7 +71,7 @@ namespace UnifiedStockExchange.Controllers
                             wsResult = await webSocket.ReceiveAsync(buffer, GetTimeoutToken(2 * 60 * 1000));
                             if (wsResult.MessageType != WebSocketMessageType.Text)
                             {
-                                await SendMessageAndClose(webSocket, "Only text messages supported.");
+                                await webSocket.CloseAsync(WebSocketCloseStatus.InvalidMessageType, "Only text messages supported.", GetTimeoutToken());
                                 return;
                             }
 
@@ -110,7 +110,7 @@ namespace UnifiedStockExchange.Controllers
                         catch
                         {
                             string message = "Invalid message payload. Expecting: { \"time\": 1682104181000, \"price\": 15328.28, \"amount\": 825.84 } where time is Unix Timestamp in milliseconds.";
-                            await SendMessageAndClose(webSocket, message);
+                            await webSocket.CloseAsync(WebSocketCloseStatus.ProtocolError, message, GetTimeoutToken());
                             return;
                         }
                     }

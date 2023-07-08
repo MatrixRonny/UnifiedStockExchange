@@ -70,6 +70,9 @@ namespace UnifiedStockExchange.Client.CSharp
             while (_webSocket.State == WebSocketState.Open)
             {
                 string json = await ReceiveMessageAsync();
+                if (json == "")
+                    continue;
+
                 json = json.Substring(0, json.IndexOf((char)0));
                 PriceUpdateWithTimestamp priceUpdate = JsonSerializer.Deserialize<PriceUpdateWithTimestamp>(json);
 
@@ -84,6 +87,8 @@ namespace UnifiedStockExchange.Client.CSharp
                     Amount = priceUpdate.Amount
                 });
             }
+
+            throw new ApplicationException("WebSocket closed with message: " + _webSocket.CloseStatusDescription);
         }
 
         private async Task<string> ReceiveMessageAsync()
