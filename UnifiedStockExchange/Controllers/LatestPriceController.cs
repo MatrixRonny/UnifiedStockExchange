@@ -68,7 +68,7 @@ namespace UnifiedStockExchange.Controllers
                     }
                     catch
                     {
-                        await SendMessageAndClose(webSocket, "An unexpected error has occured.");
+                        await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "An unexpected error has occured.", GetTimeoutToken());
                         return;
                     }
                     finally
@@ -86,14 +86,22 @@ namespace UnifiedStockExchange.Controllers
 
                 // Wait until other side closes websoket or incoming price handler is removed.
                 var receiveResult = await webSocket.ReceiveAsync(new byte[20], tokenSource.Token);
+
+                await webSocket.CloseAsync(WebSocketCloseStatus.ProtocolError, "Not expecting to receive any messages.", GetTimeoutToken());
+            }
+            catch(ApplicationException e)
+            {
+                // Could not add ForwardHandler.
+                await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, e.Message, GetTimeoutToken());
+            }
+            catch(WebSocketException e)
+            {
+                // Client closed WebSocket connection.
+                _priceService.RemoveForwardHandler(exchangeName, tradingPair, priceForwarder!);
             }
             finally
             {
-                if (priceForwarder != null)
-                {
-                    _priceService?.RemoveForwardHandler(exchangeName, tradingPair, priceForwarder);
-                    _activeForwarders.Remove(priceForwarder);
-                }
+                _activeForwarders.Remove(priceForwarder!);
                 webSocket.Dispose();
             }
         }
