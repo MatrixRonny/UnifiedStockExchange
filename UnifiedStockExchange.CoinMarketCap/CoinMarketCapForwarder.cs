@@ -33,7 +33,14 @@ public class CoinMarketCapForwarder : IDisposable
             throw new ObjectDisposedException(nameof(CoinMarketCapForwarder));
 
         _priceWriter = new PriceWriter(_unifiedExchangeWs.AbsoluteUri, _exchangeName);
-        await _priceWriter.ConnectAsync();
+        try
+        {
+            await _priceWriter.ConnectAsync();
+        }
+        catch(WebSocketException e)
+        {
+            throw new ApplicationException("Could not connect to UnifiedStockExchange WebSocket: " + e.Message);
+        }
 
         _webSocket = new ClientWebSocket();
         _webSocket.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0");
