@@ -1,4 +1,7 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using System.Collections.Immutable;
 using UnifiedStockExchange.CoinMarketCap;
 
@@ -17,6 +20,8 @@ internal class Program
             return;
         }
 
+        ILogger logger = CreateLogger();
+
         string priceInfoJson = File.ReadAllText("CoinMarketCap.json");
         List<CryptoCurrency> currencies = GetCryptoCurrencies(priceInfoJson);
         CryptoCurrencies = currencies.ToDictionary(it => it.Id, it => it).ToImmutableDictionary();
@@ -30,8 +35,55 @@ internal class Program
             }
             catch(Exception e)
             {
-                Console.WriteLine($"{e.GetType().Name}: {e.Message}\n{e.StackTrace}");
+                logger.LogError(e, "Main loop exception: ");
             }
+        }
+    }
+
+    private static ILogger CreateLogger()
+    {
+        IServiceCollection services = new ServiceCollection();
+        services.AddLogging(builder =>
+        {
+            builder.AddSimpleConsole();
+
+            IConfiguration config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
+            builder.AddFile(config.GetSection("Logging"), options =>
+            {
+                options.FormatLogEntry = msg =>
+                {
+                    string logLevel = GetShortLogLevel(msg.LogLevel);
+                    if (msg.Exception == null)
+                        return $"{DateTime.Now.ToString("O")}\t{logLevel}\t[{msg.LogName}]\t[{msg.EventId.Name ?? "0"}]\t{msg.Message}";
+                    else
+                        return $"{DateTime.Now.ToString("O")}\t{logLevel}\t[{msg.LogName}]\t[{msg.EventId.Name ?? "0"}]\t{msg.Message} => {msg.Exception.GetType().FullName}: {msg.Exception.Message}\r\n{msg.Exception.StackTrace}";
+                };
+            });
+        });
+
+        return services.BuildServiceProvider().GetService<ILogger<Program>>();
+    }
+
+    static string GetShortLogLevel(LogLevel logLevel)
+    {
+        switch (logLevel)
+        {
+            case LogLevel.Trace:
+                return "TRCE";
+            case LogLevel.Debug:
+                return "DBUG";
+            case LogLevel.Information:
+                return "INFO";
+            case LogLevel.Warning:
+                return "WARN";
+            case LogLevel.Error:
+                return "FAIL";
+            case LogLevel.Critical:
+                return "CRIT";
+            default:
+                return logLevel.ToString().ToUpper();
         }
     }
 
