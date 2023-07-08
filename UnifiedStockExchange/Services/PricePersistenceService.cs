@@ -34,6 +34,8 @@ namespace UnifiedStockExchange.Services
 
         public void RecordPrice(string exchangeName, ValueTuple<string, string> tradingPair, DateTime time, decimal price, decimal amount)
         {
+            //TODO: Change this method to return an object that can be used to record price for specific exchange and tradingPair.
+
             string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
 
             DateTime lastWrite;
@@ -41,11 +43,11 @@ namespace UnifiedStockExchange.Services
             {
                 DateTime dateTimeNow = DateTime.UtcNow;
 
-                if (_lastCleanup != DateTime.UtcNow.Date)
+                if (_lastCleanup + CacheTimeout < dateTimeNow)
                 {
-                    // Time to clean up old entries from _tableAccess cache.
+                    // Clean up old entries from _tableAccess cache.
 
-                    _lastCleanup = DateTime.UtcNow.Date;
+                    _lastCleanup = dateTimeNow;
 
                     IEnumerable<string> expiredKeys = _lastWrite
                         .Where(it => (dateTimeNow - it.Value) > CacheTimeout)
@@ -53,7 +55,7 @@ namespace UnifiedStockExchange.Services
                     foreach (string key in expiredKeys)
                     {
                         _lastWrite.Remove(key);
-                        _priceData.Remove(key);
+                        //_priceData.Remove(key);
                         _tableAccess.Remove(key);
                     }
                 }
@@ -62,7 +64,7 @@ namespace UnifiedStockExchange.Services
                 {
                     // Create missing exchangeQuote cache and data access.
 
-                    _lastWrite[exchangeQuote] = DateTime.UtcNow;
+                    _lastWrite[exchangeQuote] = dateTimeNow;
                     _priceData[exchangeQuote] = new PriceCandle
                     {
                         Date = TruncateDateToMinute(dateTimeNow),
@@ -77,6 +79,16 @@ namespace UnifiedStockExchange.Services
                     TableDataAccess<PriceCandle> dataAccess = new TableDataAccess<PriceCandle>(_connectionFactory, "PriceData_" + exchangeQuote);
                     dataAccess.CreateTable();
                     _tableAccess[exchangeQuote] = dataAccess;
+
+                    try
+                    {
+                        dataAccess.Insert(_priceData[exchangeQuote]);
+                    }
+                    catch (SQLiteException e) when (e.ErrorCode == 19)
+                    {
+                        //EMPTY: The current sample may have been flushed due to WebSocket failure. On reconnect, the price has already
+                        //  been recorded for the current date, considering that price is recorded once per PersistenceInterval.
+                    }
                 }
                 else
                 {
@@ -96,26 +108,28 @@ namespace UnifiedStockExchange.Services
 
                     priceCandle.Close = price;
                     priceCandle.Volume += amount;
+
+                    TableDataAccess<PriceCandle> dataAccess = _tableAccess[exchangeQuote];
+                    dataAccess.CreateUpdateFilter().Where(it => it.Date == priceCandle.Date).ExecuteUpdate(priceCandle);
                 }
                 else
                 {
-                    // Store existing PriceCandle and create new one.
+                    // Create and insert new PriceCandle.
+
+                    priceCandle.Date = TruncateDateToMinute(time);
+                    priceCandle.Open = priceCandle.High = priceCandle.Low = priceCandle.Close = price;
+                    priceCandle.Volume = amount;
 
                     try
                     {
                         TableDataAccess<PriceCandle> dataAccess = _tableAccess[exchangeQuote];
-                        dataAccess.Insert(_priceData[exchangeQuote]);
+                        dataAccess.Insert(priceCandle);
                     }
-                    catch(SQLiteException e) when(e.ErrorCode == 19)
+                    catch (SQLiteException e) when (e.ErrorCode == 19)
                     {
                         //EMPTY: The current sample may have been flushed due to WebSocket failure. On reconnect, the price has already
                         //  been recorded for the current date, considering that price is recorded once per PersistenceInterval.
                     }
-
-                    priceCandle.Date = TruncateDateToMinute(time);
-                    priceCandle.Open = priceCandle.High = priceCandle.Low = price;
-                    priceCandle.Close = 0;
-                    priceCandle.Volume = amount;
                 }
             }
         }
