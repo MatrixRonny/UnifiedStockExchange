@@ -28,7 +28,7 @@ namespace UnifiedStockExchange.Services
             lock (_priceListeners)
             lock (_priceForwarders)
             {
-                if (_priceQuotes.ContainsKey(exchangeName) && _priceQuotes[exchangeName].Contains(tradingPair.ToName()))
+                if (_priceQuotes.ContainsKey(exchangeName) && _priceQuotes[exchangeName].Contains(tradingPair.ToPairString()))
                     throw new ApplicationException("A listener has already been registered for that exchange and quote.");
 
                 string exchangeQuote = tradingPair.ToExchangeQuote(exchangeName);
@@ -60,7 +60,7 @@ namespace UnifiedStockExchange.Services
                         {
                             _priceQuotes[exchangeName] = new();
                         }
-                        _priceQuotes[exchangeName].Add(tradingPair.ToName());
+                        _priceQuotes[exchangeName].Add(tradingPair.ToPairString());
                         _priceListeners[exchangeQuote] = handler;
                         _priceForwarders[handler] = new List<PriceUpdateHandler>();
 
@@ -87,7 +87,7 @@ namespace UnifiedStockExchange.Services
                 _priceForwarders.TryRemove(incomingListener, out forwardHandlers);
                 _priceListeners.Remove(exchangeQuote);
 
-                _priceQuotes[exchangeName].Remove(tradingPair.ToName());
+                _priceQuotes[exchangeName].Remove(tradingPair.ToPairString());
                 if (_priceQuotes[exchangeName].Count == 0)
                 {
                     _priceQuotes.Remove(exchangeName);

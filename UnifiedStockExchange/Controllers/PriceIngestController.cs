@@ -18,7 +18,7 @@ namespace UnifiedStockExchange.Controllers
 {
     public class PriceIngestController : WebSocketControllerBase
     {
-        // Stock Data library in Python: https://github.com/ccxt/ccxt
+        //TODO: Stock Data library in Python: https://github.com/ccxt/ccxt
 
         private readonly PriceExchangeService _exchangeService;
         private readonly PricePersistenceService _persistenceService;

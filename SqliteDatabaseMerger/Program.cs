@@ -23,7 +23,7 @@ destConn.Open();
 //srcConn2.Open();
 //destConn2.Open();
 
-List<string> tableNames = srcConn.Select<string>("SELECT name FROM sqlite_schema WHERE type='table'");
+IList<string> tableNames = srcConn.Select<string>("SELECT name FROM sqlite_schema WHERE type='table'");
 
 //TODO: Need to consider FK graph when inserting. Also, create transaction to ensure join data is consistent after insert.
 for(int index=0; index<tableNames.Count; index++)
@@ -37,7 +37,7 @@ for(int index=0; index<tableNames.Count; index++)
         string tableSchema = srcConn.Single<string>("SELECT sql FROM sqlite_schema WHERE type='table' AND name=@tableName", new { tableName});
         destConn.ExecuteNonQuery(tableSchema);
 
-        List<string> indexQueries = srcConn.Select<string>("SELECT sql FROM sqlite_schema WHERE type='index' AND tbl_name=@tableName", new { tableName });
+        IList<string> indexQueries = srcConn.Select<string>("SELECT sql FROM sqlite_schema WHERE type='index' AND tbl_name=@tableName", new { tableName });
         foreach(string query in indexQueries.Where(it => it != null))
         {
             destConn.ExecuteNonQuery(query);

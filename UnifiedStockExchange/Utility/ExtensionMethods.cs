@@ -2,7 +2,7 @@
 {
     public static class ExtensionMethods
     {
-        public static string ToName(this ValueTuple<string, string> tradingPair)
+        public static string ToPairString(this ValueTuple<string, string> tradingPair)
         {
             return $"{tradingPair.Item2}-{tradingPair.Item1}";
         }
