@@ -35,7 +35,7 @@ internal class Program
             }
             catch(Exception e)
             {
-                logger.LogError(e, "Main loop exception: ");
+                logger.LogError(e, "Main loop exception.");
             }
         }
     }

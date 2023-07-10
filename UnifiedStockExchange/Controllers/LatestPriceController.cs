@@ -5,17 +5,21 @@ using System.Text.Json;
 using System.Threading;
 using UnifiedStockExchange.Contracts;
 using UnifiedStockExchange.Domain.DataTransfer;
+using UnifiedStockExchange.Domain.Entities;
 using UnifiedStockExchange.Services;
+using UnifiedStockExchange.Utility;
 
 namespace UnifiedStockExchange.Controllers
 {
     public class LatestPriceController : WebSocketControllerBase
     {
         private readonly PriceExchangeService _priceService;
+        private readonly PricePersistenceService _persistenceService;
 
-        public LatestPriceController(PriceExchangeService priceService)
+        public LatestPriceController(PriceExchangeService priceService, PricePersistenceService persistenceService)
         {
             _priceService = priceService;
+            _persistenceService = persistenceService;
             _priceService.ForwardingHandlerRemoved += OnForwardingHandlerRemoved;
         }
 
@@ -31,13 +35,30 @@ namespace UnifiedStockExchange.Controllers
             tokenSource?.Cancel();
         }
 
+        /// <summary>
+        /// Establish WebSocket connection that will be used to send price updates to the client.
+        /// </summary>
+        /// <param name="exchangeName">The exchange name where to retrieve data.</param>
+        /// <param name="fromCurrency">The currency for the price.</param>
+        /// <param name="toCurrency">The currency that for which the price is calculated.</param>
+        /// <param name="fromDate">Optional: Send data starting from the specified UTC date. Returns less data than received in real-time.</param>
         [HttpGet("{exchangeName}/{fromCurrency}/{toCurrency}/ws")]
-        public async Task Get(string exchangeName, string fromCurrency, string toCurrency)
+        public async Task Get(string exchangeName, string fromCurrency, string toCurrency, DateTime? fromDate = null)
         {
+            if(fromDate != null && (DateTime.UtcNow - fromDate.Value).TotalDays > 30)
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+                using (StreamWriter writer = new StreamWriter(HttpContext.Response.Body))
+                {
+                    writer.Write("From date cannot be older than 30 days.");
+                }
+                return;
+            }
+
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
                 using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                await SendPriceUpdatesAsync(exchangeName, (fromCurrency, toCurrency), webSocket);
+                await SendPriceUpdatesAsync(exchangeName, (fromCurrency, toCurrency), webSocket, fromDate);
             }
             else
             {
@@ -45,7 +66,7 @@ namespace UnifiedStockExchange.Controllers
             }
         }
 
-        private async Task SendPriceUpdatesAsync(string exchangeName, ValueTuple<string, string> tradingPair, WebSocket webSocket)
+        private async Task SendPriceUpdatesAsync(string exchangeName, ValueTuple<string, string> tradingPair, WebSocket webSocket, DateTime? fromDate = null)
         {
             PriceUpdateHandler? priceForwarder = null;
             try
@@ -68,7 +89,7 @@ namespace UnifiedStockExchange.Controllers
                     }
                     catch
                     {
-                        await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "An unexpected error has occured.", GetTimeoutToken());
+                        await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "An unexpected error has occurred.", GetTimeoutToken());
                         return;
                     }
                     finally
@@ -77,6 +98,21 @@ namespace UnifiedStockExchange.Controllers
                     }
                 };
 
+                if(fromDate != null)
+                {
+                    IList<PriceCandle> result = _persistenceService.SelectPriceData(exchangeName, tradingPair)
+                        .Where(it => it.Date > fromDate)
+                        .ExecuteSelect();
+
+                    //TODO: Optimize to use reader instead of retrieving all records.
+                    foreach (PriceCandle price in result)
+                    {
+                        priceForwarder(tradingPair.ToPairString(), price.Date, price.Open, price.Volume);
+                    }
+
+                    fromDate = result.Last().Date;
+                }
+
                 CancellationTokenSource tokenSource;
                 lock (_activeForwarders)
                 {
@@ -84,17 +120,24 @@ namespace UnifiedStockExchange.Controllers
                 }
                 _priceService.AddForwardHandler(exchangeName, tradingPair, priceForwarder);
 
-                // Wait until other side closes websoket or incoming price handler is removed.
-                var receiveResult = await webSocket.ReceiveAsync(new byte[20], tokenSource.Token);
+                try
+                {
+                    // Wait until other side closes websoket or incoming price handler is removed.
+                    var receiveResult = await webSocket.ReceiveAsync(new byte[20], tokenSource.Token);
 
-                await webSocket.CloseAsync(WebSocketCloseStatus.ProtocolError, "Not expecting to receive any messages.", GetTimeoutToken());
+                    await webSocket.CloseAsync(WebSocketCloseStatus.ProtocolError, "Not expecting to receive any messages.", GetTimeoutToken());
+                }
+                catch(OperationCanceledException)
+                {
+                    await webSocket.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "Exchange and trading pair no longer available", GetTimeoutToken());
+                }
             }
             catch(ApplicationException e)
             {
                 // Could not add ForwardHandler.
                 await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, e.Message, GetTimeoutToken());
             }
-            catch(WebSocketException e)
+            catch(WebSocketException)
             {
                 // Client closed WebSocket connection.
                 _priceService.RemoveForwardHandler(exchangeName, tradingPair, priceForwarder!);
