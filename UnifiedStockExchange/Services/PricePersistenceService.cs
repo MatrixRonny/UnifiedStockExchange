@@ -149,7 +149,7 @@ namespace UnifiedStockExchange.Services
                 TableDataAccess<PriceCandle> dataAccess = _tableAccess[exchangeQuote];
                 lock (dataAccess)
                 {
-                    dataAccess.Insert(_priceData[exchangeQuote]);
+                    dataAccess.CreateUpdateFilter().Where(it => it.Date == priceCandle.Date).ExecuteUpdate(_priceData[exchangeQuote]);
                 }
             }
 
