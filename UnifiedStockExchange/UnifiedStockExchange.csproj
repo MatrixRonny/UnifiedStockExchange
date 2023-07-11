@@ -20,4 +20,8 @@
     <Folder Include="Exceptions\" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="xcopy &quot;$(OutDir)&quot; D:\Production\UnifiedStockExchange\ /S /Q /Y" />
+  </Target>
+
 </Project>

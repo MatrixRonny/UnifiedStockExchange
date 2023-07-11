@@ -27,4 +27,8 @@
     </None>
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="xcopy &quot;$(OutDir)&quot; D:\Production\UnifiedStockExchange.CoinMarketCap\ /S /Q /Y" />
+  </Target>
+
 </Project>
