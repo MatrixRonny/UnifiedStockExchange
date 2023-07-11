@@ -1,7 +1,6 @@
 ﻿using ServiceStack;
 using System.Collections.Immutable;
 using UnifiedStockExchange.Contracts;
-using UnifiedStockExchange.Domain.Utility;
 using UnifiedStockExchange.Utility;
 
 namespace UnifiedStockExchange.Services
@@ -36,25 +35,31 @@ namespace UnifiedStockExchange.Services
                 {
                     case "CoinMarketCap":
                     {
-                        ValueReference<PriceUpdateHandler> valRef = new();
-                        PriceUpdateHandler handler = (tradingPair, time, price, amount) =>
+                        PriceUpdateHandler handler = null!;
+                        handler = async (pairName, time, price, amount) =>
                         {
-                            List<PriceUpdateHandler> forwardList = _priceForwarders[valRef.Value!];
-                            lock(forwardList)
+                            List<PriceUpdateHandler> forwardList = _priceForwarders[handler];
+                            Monitor.Enter(forwardList);
+                            try
                             {
-                                Parallel.ForEach(forwardList, update =>
+                                foreach(PriceUpdateHandler updateHandler in forwardList)
                                 {
                                     try
                                     {
-                                        update(tradingPair, time, price, amount);
+                                        await updateHandler(pairName, time, price, amount);
                                     }
                                     catch
                                     {
+                                        RemoveForwardHandler(exchangeName, tradingPair, updateHandler);
+                                        break;
                                     }
-                                });
+                                }
+                            }
+                            finally
+                            {
+                                Monitor.Exit(forwardList);
                             }
                         };
-                        valRef.Value = handler;
 
                         if (!_priceQuotes.ContainsKey(exchangeName))
                         {

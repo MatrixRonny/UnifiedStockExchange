@@ -68,49 +68,70 @@ namespace UnifiedStockExchange.Controllers
 
         private async Task SendPriceUpdatesAsync(string exchangeName, ValueTuple<string, string> tradingPair, WebSocket webSocket, DateTime? fromDate = null)
         {
-            PriceUpdateHandler? priceForwarder = null;
+            PriceUpdateHandler priceForwarder = null!;
             try
             {
+                // Send history based on fromDate before sending real-time data.
+
                 object lockObject = new object();
-                priceForwarder = async (tradingPair, time, price, amount) =>
+                priceForwarder = async (pairName, time, price, amount) =>
                 {
-                    Monitor.Enter(lockObject);
                     try
                     {
+                        if (fromDate != null)
+                        {
+                            // Determine history after fromDate, but before current price time.
+                            IList<PriceCandle> priceHistory = _persistenceService.SelectPriceData(exchangeName, tradingPair)
+                                .Where(it => it.Date > fromDate && it.Date < time)
+                                .ExecuteSelect();
+
+                            // Disable this if.
+                            fromDate = null;
+
+                            // Send history recursively before sending the current price.
+                            foreach (PriceCandle item in priceHistory)
+                            {
+                                await priceForwarder(pairName, item.Date, item.Open, item.Volume);
+                            }
+                        }
+
                         long unixTimeMillis = new DateTimeOffset(time).ToUnixTimeMilliseconds();
                         string json = JsonSerializer.Serialize(new PriceUpdateData 
                         { 
-                            TradingPair = tradingPair,
+                            TradingPair = pairName,
                             Time = unixTimeMillis, 
                             Price = price,
                             Amount = amount 
                         });
                         await webSocket.SendAsync(Encoding.UTF8.GetBytes(json), WebSocketMessageType.Text, true, CancellationToken.None);
                     }
-                    catch
+                    catch(Exception e) when(e is not WebSocketException)
                     {
                         await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "An unexpected error has occurred.", GetTimeoutToken());
-                        return;
-                    }
-                    finally
-                    {
-                        Monitor.Exit(lockObject);
+                        throw;
                     }
                 };
 
+                // This partial duplication of priceForwarder lambda ensures that most of the history is sent before
+                // starting to listen for real-time data.
                 if(fromDate != null)
                 {
-                    IList<PriceCandle> result = _persistenceService.SelectPriceData(exchangeName, tradingPair)
-                        .Where(it => it.Date > fromDate)
+                    // Retrieve all available price history starting with fromDate.
+                    IList<PriceCandle> priceHistory = _persistenceService.SelectPriceData(exchangeName, tradingPair)
+                        .Where(it => it.Date >= fromDate)
                         .ExecuteSelect();
 
+                    // Avoid the if at the beginning of priceForwarder.
+                    fromDate = null;
+
                     //TODO: Optimize to use reader instead of retrieving all records.
-                    foreach (PriceCandle price in result)
+                    foreach (PriceCandle price in priceHistory)
                     {
-                        priceForwarder(tradingPair.ToPairString(), price.Date, price.Open, price.Volume);
+                        await priceForwarder(tradingPair.ToPairString(), price.Date, price.Open, price.Volume);
                     }
 
-                    fromDate = result.Last().Date;
+                    // Specify what was the last sent history item.
+                    fromDate = priceHistory.Last().Date;
                 }
 
                 CancellationTokenSource tokenSource;

@@ -105,7 +105,7 @@ namespace UnifiedStockExchange.Controllers
                                 }
                             }
 
-                            priceListener(priceUpdate.TradingPair, time, priceUpdate.Price, priceUpdate.Amount);
+                            await priceListener(priceUpdate.TradingPair, time, priceUpdate.Price, priceUpdate.Amount);
                         }
                         catch
                         {
