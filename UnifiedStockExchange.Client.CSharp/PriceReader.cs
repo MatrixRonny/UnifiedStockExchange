@@ -6,6 +6,7 @@ using System.Threading;
 using System;
 using UnifiedStockExchange.CSharp;
 using System.IO;
+using System.Web;
 
 namespace UnifiedStockExchange.Client.CSharp
 {
@@ -26,7 +27,7 @@ namespace UnifiedStockExchange.Client.CSharp
             _tradingPair = tradingPair;
         }
 
-        public async Task ConnectAndReceiveAsync()
+        public async Task ConnectAndReceiveAsync(DateTime? fromDate)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(nameof(PriceReader));
@@ -38,6 +39,8 @@ namespace UnifiedStockExchange.Client.CSharp
             {
                 UriBuilder uriBuilder = new UriBuilder(_unifiedStockExchangeUrl);
                 uriBuilder.Path = $"LatestPrice/{_exchangeName}/{_tradingPair.Item1}/{_tradingPair.Item2}/ws";
+                if (fromDate != null)
+                    uriBuilder.Query = "?fromDate=" + fromDate.Value.ToString("s");
 
                 _tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
                 await webSocket.ConnectAsync(uriBuilder.Uri, _tokenSource.Token);
