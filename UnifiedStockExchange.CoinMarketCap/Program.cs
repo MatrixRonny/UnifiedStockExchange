@@ -37,6 +37,8 @@ internal class Program
             {
                 logger.LogError(e, "Main loop exception.");
             }
+
+            await Task.Delay(1000);
         }
     }
 
