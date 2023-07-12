@@ -27,7 +27,7 @@ namespace UnifiedStockExchange.Client.CSharp
             _tradingPair = tradingPair;
         }
 
-        public async Task ConnectAndReceiveAsync(DateTime? fromDate)
+        public async Task ConnectAndReceiveAsync(DateTime? fromDate = null)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(nameof(PriceReader));
