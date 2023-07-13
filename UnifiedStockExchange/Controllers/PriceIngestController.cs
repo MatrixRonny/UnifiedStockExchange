@@ -72,7 +72,7 @@ namespace UnifiedStockExchange.Controllers
                             wsResult = await webSocket.ReceiveAsync(buffer, GetTimeoutToken(2 * 60 * 1000));
                             if (wsResult.MessageType != WebSocketMessageType.Text)
                             {
-                                await webSocket.CloseAsync(WebSocketCloseStatus.InvalidMessageType, "Only text messages supported.", GetTimeoutToken());
+                                await webSocket.CloseOutputAsync(WebSocketCloseStatus.InvalidMessageType, "Only text messages supported.", GetTimeoutToken());
                                 return;
                             }
 
