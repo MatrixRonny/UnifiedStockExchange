@@ -64,10 +64,19 @@ namespace UnifiedStockExchange.Services
                 {
                     // Create missing exchangeQuote cache and data access.
 
+                    time = TruncateDateToMinute(time);
+                    TableDataAccess<PriceCandle> dataAccess = new TableDataAccess<PriceCandle>(_connectionFactory, "PriceData_" + exchangeQuote);
+                    dataAccess.CreateTable();
+
+                    // Prevent client to overwrite older data.
+                    PriceCandle? lastPrice = dataAccess.CreateSelectFilter().OrderByDescending(it => it.Date).Take(1).ExecuteSelect().SingleOrDefault();
+                    if (lastPrice != null && lastPrice.Date > time)
+                        throw new ApplicationException("Could not record price earlier than last recorded price.");
+
                     _lastWrite[exchangeQuote] = dateTimeNow;
                     _priceData[exchangeQuote] = new PriceCandle
                     {
-                        Date = TruncateDateToMinute(dateTimeNow),
+                        Date = time,
                         Interval = PersistenceInterval,
                         Open = price,
                         High = price,
@@ -76,8 +85,6 @@ namespace UnifiedStockExchange.Services
                         Volume = 0  // Will be adjusted when updating PriceCandle
                     };
 
-                    TableDataAccess<PriceCandle> dataAccess = new TableDataAccess<PriceCandle>(_connectionFactory, "PriceData_" + exchangeQuote);
-                    dataAccess.CreateTable();
                     _tableAccess[exchangeQuote] = dataAccess;
 
                     try

@@ -16,9 +16,9 @@ namespace UnifiedStockExchange.CSharp
         private readonly string _exchangeName;
         private ClientWebSocket _webSocket;
 
-        public PriceWriter(string unfiedStockExchangeUrl, string exchangeName)
+        public PriceWriter(string unifiedStockExchangeUrl, string exchangeName)
         {
-            _unfiedStockExchangeUrl = unfiedStockExchangeUrl;
+            _unfiedStockExchangeUrl = unifiedStockExchangeUrl;
             _exchangeName = exchangeName;
         }
 
@@ -44,6 +44,9 @@ namespace UnifiedStockExchange.CSharp
             }
 
             _webSocket = webSocket;
+
+            // Process WebSocket close event.
+            _ = _webSocket.ReceiveAsync(new ArraySegment<byte>(new byte[10]), CancellationToken.None);
         }
 
         public void Disconnect()
@@ -68,6 +71,12 @@ namespace UnifiedStockExchange.CSharp
         /// <returns></returns>
         public async Task SendPriceUpdateAsync(ValueTuple<string, string> tradingPair, DateTime time, decimal price, decimal amount)
         {
+            if (_webSocket.State == WebSocketState.CloseReceived)
+            {
+                await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+                throw new ApplicationException("UnifiedStockExchange closed WebSocket connection.");
+            }
+
             string jsonData = JsonSerializer.Serialize(new PriceUpdateWithTimestamp
             {
                 Time = new DateTimeOffset(time).ToUnixTimeMilliseconds(),
