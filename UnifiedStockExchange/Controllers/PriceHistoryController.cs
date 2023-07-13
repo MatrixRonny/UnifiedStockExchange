@@ -37,7 +37,7 @@ namespace UnifiedStockExchange.Controllers
             DateTime untilDate = body.FromDate.Value.AddMinutes((int)body.CandleInterval * body.CandleSamples);
 
             var priceFilter = _persistenceService.SelectPriceData(body.ExchangeName, body.TradingPair.ToTradingPair());
-            var historyData = priceFilter.Where(it => it.Date >= body.FromDate && it.Date < untilDate).ExecuteSelect();
+            var historyData = priceFilter.Where(it => it.Date >= body.FromDate && it.Date < untilDate).OrderBy(it => it.Date).ExecuteSelect();
             List<PriceCandle> result = new List<PriceCandle>();
 
             PriceCandle? currentSample = null;

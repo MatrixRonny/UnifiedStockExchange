@@ -125,6 +125,9 @@ public class CoinMarketCapForwarder : IDisposable
     Dictionary<int, double> _totalVolume = new Dictionary<int, double>();
     private async Task SendPriceUpdateAsync(int currencyId, double price, double currentVolume, long unixTimeMillis)
     {
+        if (_webSocket.State == WebSocketState.CloseReceived)
+            await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, new CancellationTokenSource(5000).Token);
+
         double lastVolume;
         lock(_totalVolume)
         {

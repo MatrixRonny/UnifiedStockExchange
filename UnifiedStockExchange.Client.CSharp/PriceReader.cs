@@ -91,6 +91,8 @@ namespace UnifiedStockExchange.Client.CSharp
                 });
             }
 
+            await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+
             throw new ApplicationException("WebSocket closed with message: " + _webSocket.CloseStatusDescription);
         }
 

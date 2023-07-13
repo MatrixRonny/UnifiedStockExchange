@@ -13,6 +13,7 @@ using System.Dynamic;
 using System.Diagnostics;
 using UnifiedStockExchange.Domain.DataTransfer;
 using UnifiedStockExchange.Utility;
+using ServiceStack.Messaging;
 
 namespace UnifiedStockExchange.Controllers
 {
@@ -107,10 +108,15 @@ namespace UnifiedStockExchange.Controllers
 
                             await priceListener(priceUpdate.TradingPair, time, priceUpdate.Price, priceUpdate.Amount);
                         }
+                        catch(ApplicationException e)
+                        {
+                            await webSocket.CloseOutputAsync(WebSocketCloseStatus.ProtocolError, e.Message, GetTimeoutToken());
+                            return;
+                        }
                         catch
                         {
                             string message = "Invalid message payload. Expecting: { \"time\": 1682104181000, \"price\": 15328.28, \"amount\": 825.84 } where time is Unix Timestamp in milliseconds.";
-                            await webSocket.CloseAsync(WebSocketCloseStatus.ProtocolError, message, GetTimeoutToken());
+                            await webSocket.CloseOutputAsync(WebSocketCloseStatus.ProtocolError, message, GetTimeoutToken());
                             return;
                         }
                     }
