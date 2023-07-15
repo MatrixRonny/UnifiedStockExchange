@@ -16,6 +16,9 @@ namespace UnifiedStockExchange.Services
         // [incomingListener][index] = forwardHandler
         Dictionary<PriceUpdateHandler, List<PriceUpdateHandler>> _priceForwarders = new Dictionary<PriceUpdateHandler, List<PriceUpdateHandler>>();
 
+        // [incomingListener] = SempaphoreSlim
+        Dictionary<PriceUpdateHandler, SemaphoreSlim> _updateSemaphore = new Dictionary<PriceUpdateHandler, SemaphoreSlim>();
+
         public IReadOnlyDictionary<string, IReadOnlyList<string>> ActiveExchangeQuotes =>
             _priceQuotes.ToImmutableDictionary(it => it.Key, it => (IReadOnlyList<string>)it.Value);
 
@@ -38,8 +41,15 @@ namespace UnifiedStockExchange.Services
                         PriceUpdateHandler handler = null!;
                         handler = async (pairName, time, price, amount) =>
                         {
-                            List<PriceUpdateHandler> forwardList = _priceForwarders[handler];
-                            Monitor.Enter(forwardList);
+                            List<PriceUpdateHandler> forwardList;
+                            SemaphoreSlim semaphore;
+                            lock (_priceForwarders)
+                            {
+                                forwardList = _priceForwarders[handler];
+                                semaphore = _updateSemaphore[handler];
+                            }
+
+                            await semaphore.WaitAsync();
                             try
                             {
                                 foreach(PriceUpdateHandler updateHandler in forwardList)
@@ -57,7 +67,7 @@ namespace UnifiedStockExchange.Services
                             }
                             finally
                             {
-                                Monitor.Exit(forwardList);
+                                semaphore.Release();
                             }
                         };
 
@@ -68,6 +78,7 @@ namespace UnifiedStockExchange.Services
                         _priceQuotes[exchangeName].Add(tradingPair.ToPairString());
                         _priceListeners[exchangeQuote] = handler;
                         _priceForwarders[handler] = new List<PriceUpdateHandler>();
+                        _updateSemaphore[handler] = new SemaphoreSlim(1);
 
                         return handler;
                     }
@@ -90,6 +101,7 @@ namespace UnifiedStockExchange.Services
 
                 PriceUpdateHandler incomingListener = _priceListeners[exchangeQuote];
                 _priceForwarders.TryRemove(incomingListener, out forwardHandlers);
+                _updateSemaphore.Remove(incomingListener);
                 _priceListeners.Remove(exchangeQuote);
 
                 _priceQuotes[exchangeName].Remove(tradingPair.ToPairString());
@@ -99,9 +111,12 @@ namespace UnifiedStockExchange.Services
                 }
             }
 
-            foreach (PriceUpdateHandler forwarder in forwardHandlers)
+            if (forwardHandlers != null)
             {
-                ForwardingHandlerRemoved?.Invoke(forwarder);
+                foreach (PriceUpdateHandler forwarder in forwardHandlers)
+                {
+                    ForwardingHandlerRemoved?.Invoke(forwarder);
+                }
             }
         }
         public void AddForwardHandler(string exchangeName, ValueTuple<string, string> tradingPair, PriceUpdateHandler priceForwarder)

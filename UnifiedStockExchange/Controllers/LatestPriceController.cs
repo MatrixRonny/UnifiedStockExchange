@@ -91,6 +91,7 @@ namespace UnifiedStockExchange.Controllers
                             // Send history recursively before sending the current price.
                             foreach (PriceCandle item in priceHistory)
                             {
+                                DateTime.SpecifyKind(item.Date, DateTimeKind.Utc);
                                 await priceForwarder(pairName, item.Date, item.Open, item.Volume);
                             }
                         }
@@ -127,6 +128,7 @@ namespace UnifiedStockExchange.Controllers
                     //TODO: Optimize to use reader instead of retrieving all records.
                     foreach (PriceCandle price in priceHistory)
                     {
+                        DateTime.SpecifyKind(price.Date, DateTimeKind.Utc);
                         await priceForwarder(tradingPair.ToPairString(), price.Date, price.Open, price.Volume);
                     }
 
