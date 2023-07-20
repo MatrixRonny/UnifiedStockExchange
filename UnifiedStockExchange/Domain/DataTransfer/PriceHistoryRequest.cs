@@ -6,7 +6,7 @@ namespace UnifiedStockExchange.Domain.DataTransfer
     {
         public string ExchangeName { get; set; } = null!;
         public string TradingPair { get; set; } = null!;
-        public DateTime FromDate { get; set; }
+        public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public SampleInterval CandleInterval { get; set; }
     }
