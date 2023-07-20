@@ -21,24 +21,25 @@ namespace UnifiedStockExchange.CSharp.Tests
             DateTime dateTimeNow = DateTime.UtcNow;
             decimal price = 15000;
             decimal amount = 50;
+            SampleInterval sampleInterval = SampleInterval.OneMinute;
 
             ///// Act /////
             await priceWriter.ConnectAsync();
             await priceWriter.SendPriceUpdateAsync(appSettings.PairName.ToTradingPair(), dateTimeNow, price, amount);
             priceWriter.Dispose();
 
-            List<PriceCandle> priceHistory = historyApi.PriceHistoryGetHistoryDataFromPost(new PriceHistoryRequest
+            List<PriceCandle> priceHistory = historyApi.PriceHistoryGetHistoryDataPost(new PriceHistoryRequest
             {
                 ExchangeName = appSettings.ExchangeName,
                 TradingPair = appSettings.PairName,
-                FromDate = dateTimeNow,
-                CandleSamples = 1,
-                CandleInterval = SampleInterval.OneMinute
+                FromDate = dateTimeNow.TruncateByInterval(sampleInterval),
+                EndDate = dateTimeNow.TruncateByInterval(sampleInterval).AddMinutes((int)sampleInterval),
+                CandleInterval = sampleInterval
             });
 
             ///// Assert /////
 
-            Assert.AreEqual(dateTimeNow.TruncateByInterval(SampleInterval.OneMinute), priceHistory[0].Date);
+            Assert.AreEqual(dateTimeNow.TruncateByInterval(sampleInterval), priceHistory[0].Date);
             Assert.AreEqual(price, (decimal)priceHistory[0].Open);
             Assert.AreEqual(amount, (decimal)priceHistory[0].Volume);
         }
@@ -59,24 +60,26 @@ namespace UnifiedStockExchange.CSharp.Tests
             DateTime dateTimeNow = DateTime.UtcNow;
             decimal price = 15000;
             decimal amount = 50;
+            SampleInterval sampleInterval = SampleInterval.OneMinute;
 
             ///// Act /////
             await priceWriter.ConnectAsync();
             await priceWriter.SendPriceUpdateAsync(appSettings.PairName.ToTradingPair(), dateTimeNow, price, amount);
+            // Do not close priceWriter.
 
             await Task.Delay(TimeSpan.FromSeconds(10 * 60 + 1));
-            List<PriceCandle> priceHistory = historyApi.PriceHistoryGetHistoryDataFromPost(new PriceHistoryRequest
+            List<PriceCandle> priceHistory = historyApi.PriceHistoryGetHistoryDataPost(new PriceHistoryRequest
             {
                 ExchangeName = appSettings.ExchangeName,
                 TradingPair = appSettings.PairName,
-                FromDate = dateTimeNow,
-                CandleSamples = 1,
-                CandleInterval = SampleInterval.OneMinute
+                FromDate = dateTimeNow.TruncateByInterval(sampleInterval),
+                EndDate = dateTimeNow.TruncateByInterval(sampleInterval).AddMinutes((int)sampleInterval),
+                CandleInterval = sampleInterval
             });
 
             ///// Assert /////
 
-            Assert.AreEqual(dateTimeNow.TruncateByInterval(SampleInterval.OneMinute), priceHistory[0].Date);
+            Assert.AreEqual(dateTimeNow.TruncateByInterval(sampleInterval), priceHistory[0].Date);
             Assert.AreEqual(price, (decimal)priceHistory[0].Open);
             Assert.AreEqual(amount, (decimal)priceHistory[0].Volume);
         }
