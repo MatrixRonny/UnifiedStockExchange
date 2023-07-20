@@ -128,7 +128,7 @@ namespace UnifiedStockExchange.Controllers
                     //TODO: Optimize to use reader instead of retrieving all records.
                     foreach (PriceCandle price in priceHistory)
                     {
-                        DateTime.SpecifyKind(price.Date, DateTimeKind.Utc);
+                        price.Date = DateTime.SpecifyKind(price.Date, DateTimeKind.Utc);
                         await priceForwarder(tradingPair.ToPairString(), price.Date, price.Open, price.Volume);
                     }
 

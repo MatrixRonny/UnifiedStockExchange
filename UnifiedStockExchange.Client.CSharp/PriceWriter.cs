@@ -95,7 +95,7 @@ namespace UnifiedStockExchange.CSharp
             if (!_isDisposed)
             {
                 _isDisposed = true;
-                _webSocket?.Dispose();
+                Disconnect();
             }
         }
     }
