@@ -1,4 +1,5 @@
-using System.Text.Json.Nodes;
+//INFO: Create missing SDK project by using "generate-api.bat" script. This generates REST client for UnifiedStockExchange.
+
 using UnifiedStockExchange.Sdk.CSharp.Api;
 using UnifiedStockExchange.Sdk.CSharp.Model;
 
@@ -14,7 +15,7 @@ namespace UnifiedStockExchange.CSharp.Tests
 
             AppSettings appSettings = TestUtility.GetAppSettings();
             PriceWriter priceWriter = new PriceWriter(
-                appSettings.UnifiedStockExchangeUrl, 
+                appSettings.UnifiedStockExchangeUrl,
                 appSettings.ExchangeName
             );
             PriceHistoryApi historyApi = new PriceHistoryApi(appSettings.UnifiedStockExchangeUrl);
@@ -32,7 +33,7 @@ namespace UnifiedStockExchange.CSharp.Tests
             {
                 ExchangeName = appSettings.ExchangeName,
                 TradingPair = appSettings.PairName,
-                FromDate = dateTimeNow.TruncateByInterval(sampleInterval),
+                StartDate = dateTimeNow.TruncateByInterval(sampleInterval),
                 EndDate = dateTimeNow.TruncateByInterval(sampleInterval).AddMinutes((int)sampleInterval),
                 CandleInterval = sampleInterval
             });
@@ -72,7 +73,7 @@ namespace UnifiedStockExchange.CSharp.Tests
             {
                 ExchangeName = appSettings.ExchangeName,
                 TradingPair = appSettings.PairName,
-                FromDate = dateTimeNow.TruncateByInterval(sampleInterval),
+                StartDate = dateTimeNow.TruncateByInterval(sampleInterval),
                 EndDate = dateTimeNow.TruncateByInterval(sampleInterval).AddMinutes((int)sampleInterval),
                 CandleInterval = sampleInterval
             });

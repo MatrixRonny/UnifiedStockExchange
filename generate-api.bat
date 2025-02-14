@@ -1,6 +1,6 @@
 REM @echo off
 
-SET ServerPath=UnifiedStockExchange\bin\Debug\net6.0\UnifiedStockExchange.exe
+SET ServerPath=UnifiedStockExchange\bin\Debug\net8.0\UnifiedStockExchange.exe
 
 if not exist %ServerPath% (
 	echo Please build UnifiedStockExchange project first.
@@ -8,7 +8,7 @@ if not exist %ServerPath% (
 )
 
 SET ASPNETCORE_ENVIRONMENT=Development
-SET AspNetUrls=https://localhost:7288;http://localhost:5098
+SET AspNetUrls=https://localhost:7287;http://localhost:5098
 SET StartServerCmd=powershell.exe -Command "(Start-Process -FilePath %ServerPath% -Argument \"--urls %AspNetUrls%\" -PassThru -WindowStyle Hidden).Id"
 %StartServerCmd% >temp & (set /p PID=)<temp & del temp
 
