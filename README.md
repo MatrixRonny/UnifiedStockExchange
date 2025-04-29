@@ -13,5 +13,9 @@ Create a standard API to access core features accross any stock exchange.
 ## First time run
 - Enable Git submodules with `git submodule init`
 - Clone and pull submodules recursively with `git pull --recurse-submodules`
-- Use `generate-api.bat` script to create REST client SDK from Swagger.
 - Open `UnifiedStockExchange.sln` with Visual Studio or open folder in VS Code.
+- Build the entire solution except `UnifiedStockExchange.Sdk.CSharp` project.
+- Use `generate-api.bat` script to create REST client SDK from Swagger.
+- Reload `UnifiedStockExchange.Sdk.CSharp` project into the solution.
+- Run both `UnifiedStockExchange` and `UnifiedStockExchange.CoinMarketCap`
+- Execute `/Overview/GetAvailableExchanges` API until it returns non-empty data.
